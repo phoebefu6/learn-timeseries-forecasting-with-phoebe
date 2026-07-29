@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Builder session 8 · Backtesting &amp; metrics - learn timeseries forecasting with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-timeseries-forecasting-with-phoebe</a> / Builder session 8 of 10</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn Timeseries Forecasting with Phoebe · Builder track · Session 8 of 10</div>
+    <h1>Backtesting &amp; metrics: <span class="accent">the honest scoreboard</span></h1>
+    <p class="sub">A single holdout number is noisy - it can flatter a bad model or punish a good one by luck. This session builds the honest scoreboard: rolling-origin cross-validation that marches the forecast origin forward and averages the error over many folds, the three metrics that matter (MAPE, RMSE, and the naive-scaled MASE), and prediction-interval coverage - checking that your 80% band actually holds ~80% of the actuals. We wire all of it back to the b3 live forecaster's MAPE ladder.</p>
+    <div class="chip-row">
+      <span class="chip level">🟡 Builder track</span>
+      <span class="chip audience">Practitioners: analysts · data scientists · engineers</span>
+      <span class="chip audience">Python 3.10+ · a notebook</span>
+      <span class="chip time">Evaluation done right</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Why one split lies</span>
+      <span class="a2" style="flex:4">3-18 · Rolling-origin + the metrics</span>
+      <span class="a3" style="flex:5">18-42 · Build-along: metrics + backtest</span>
+      <span class="a4" style="flex:1">42-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>Why we do not trust one number</h2>
+    </div>
+    <p class="lede">Every model so far - baselines, ETS, ARIMA, Prophet, gradient boosting - reported a single holdout MAPE. That number is a start, but it is <strong>one draw from a noisy process</strong>: land on a quiet fortnight and your model looks brilliant; land on a promo spike and it looks broken. Tonight we replace the single guess with a distribution of scores across many folds, add metrics that survive zeros and let you compare across series, and finally check that our prediction intervals are honest. This is the session that decides which model actually ships.</p>
+    <div class="legend">
+      <span class="pill solid">Live - presented in session</span>
+      <span class="pill light">Self-study - read after class</span>
+      <span class="pill peach">★ Run it now (Python)</span>
+      <span class="pill inkpill">Sources covered (cited)</span>
+    </div>
+    <div class="callout win">
+      <strong>★ What you walk out with today</strong>
+      A from-scratch implementation of MAPE, RMSE, and MASE; a rolling-origin backtest loop that reports mean error plus its spread across folds; an understanding of prediction-interval coverage (does the 80% band hold ~80% of actuals); and a rule you can defend in a review: ship the model that wins on a backtested, naive-scaled score - not on one lucky holdout.
+    </div>
+  </section>
+
+  <!-- ============ PART 1: ROLLING ORIGIN ============ -->
+  <section class="section" id="rolling">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers FPP3 time-series cross-validation</span>
+      <h2>Rolling-origin cross-validation <span class="tag concept">6 min live</span></h2>
+    </div>
+    <p class="lede">The fix for a noisy holdout is to use many of them, honestly. <strong>Rolling-origin</strong> cross-validation (also called time-series CV or walk-forward) picks an origin, trains on everything before it, forecasts the next H steps, scores that fold, then rolls the origin forward and repeats. Average the fold errors and you get a stable score with a spread that tells you how much to trust it. The train window can <strong>expand</strong> (keep all history) or <strong>slide</strong> (fixed length) - but it never, ever includes the future.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Rolling-origin backtest: each fold trains on a slate window then tests on a green H-step fold, with the origin marching forward">
+        <style>
+          .b8aI { font: 700 14px Inter, sans-serif; fill: #0F172A; }
+          .b8aL { font: 700 12px Inter, sans-serif; fill: #334155; }
+          .b8aH { font: 700 12px Inter, sans-serif; fill: #FFFFFF; }
+          .b8aX { font: 400 12px Inter, sans-serif; fill: #64748B; }
+          .b8aN { font: 600 13px Inter, sans-serif; fill: #14532D; }
+        </style>
+        <text class="b8aI" x="24" y="30">Rolling-origin: train grows, the H-step test fold marches forward</text>
+
+        <!-- fold 1 -->
+        <text class="b8aL" x="24" y="74">Fold 1</text>
+        <rect x="120" y="60" width="360" height="26" rx="5" fill="#334155"/><text class="b8aH" x="270" y="78">train</text>
+        <rect x="480" y="60" width="90" height="26" rx="5" fill="#16A34A"/><text class="b8aH" x="500" y="78">test H</text>
+        <!-- fold 2 -->
+        <text class="b8aL" x="24" y="114">Fold 2</text>
+        <rect x="120" y="100" width="450" height="26" rx="5" fill="#334155"/><text class="b8aH" x="315" y="118">train</text>
+        <rect x="570" y="100" width="90" height="26" rx="5" fill="#16A34A"/><text class="b8aH" x="590" y="118">test H</text>
+        <!-- fold 3 -->
+        <text class="b8aL" x="24" y="154">Fold 3</text>
+        <rect x="120" y="140" width="540" height="26" rx="5" fill="#334155"/><text class="b8aH" x="360" y="158">train</text>
+        <rect x="660" y="140" width="90" height="26" rx="5" fill="#16A34A"/><text class="b8aH" x="680" y="158">test H</text>
+        <!-- fold 4 -->
+        <text class="b8aL" x="24" y="194">Fold 4</text>
+        <rect x="120" y="180" width="630" height="26" rx="5" fill="#334155"/><text class="b8aH" x="405" y="198">train</text>
+        <rect x="750" y="180" width="90" height="26" rx="5" fill="#16A34A"/><text class="b8aH" x="768" y="198">test H</text>
+
+        <path d="M480,222 L840,222" stroke="#CBD5E1" stroke-width="1.5" marker-end="url(#c8)"/>
+        <text class="b8aX" x="480" y="240">origin marches forward →</text>
+        <defs>
+          <marker id="c8" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#CBD5E1"/></marker>
+        </defs>
+        <rect x="24" y="266" width="14" height="14" rx="3" fill="#16A34A"/>
+        <text class="b8aN" x="46" y="278">Score each green fold, then average across folds. The mean is the headline; the spread is the trust.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - each fold trains on the past, tests on the next H, origin rolls forward</figcaption>
+    </figure>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>Expanding vs sliding window, and how many folds<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Two dials, one rule:</p>
+        <ul>
+          <li><strong>Expanding</strong> window keeps all history before the origin - best when the series is stable and more data helps.</li>
+          <li><strong>Sliding</strong> window keeps a fixed-length recent history - best when old behaviour is no longer relevant (a regime change).</li>
+          <li><strong>Forecast at your real horizon.</strong> Each test fold is exactly H steps, because that is the decision you actually make.</li>
+          <li><strong>Enough folds to see spread.</strong> A handful of folds already turns one number into a mean plus a range - which is the whole point.</li>
+        </ul>
+        <div class="callout tip">
+          <strong>The one unbreakable rule</strong>
+          The train window never contains a timestamp at or after the origin. Fit everything - scaling, feature stats, model selection - inside the train window only. Peek past the origin and you have leaked, and the backtest becomes fiction.
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2: METRICS ============ -->
+  <section class="section" id="metrics">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers FPP3 evaluation</span>
+      <h2>Three metrics, and honest intervals <span class="tag concept">5 min live</span></h2>
+    </div>
+    <p class="lede">One metric never tells the whole story. Use three: <strong>MAPE</strong> (percentage error, intuitive but breaks near zeros), <strong>RMSE</strong> (in the series' own units, punishes big misses hardest), and <strong>MASE</strong> - the mean absolute error scaled by the in-sample naive error. MASE is the honest one: <strong>MASE &lt; 1 means you beat naive</strong>, MASE &gt; 1 means you did not, and it compares cleanly across series of different scales. Then, separately, check the <strong>coverage</strong> of your interval: an 80% band should contain about 80% of the actuals - no more, no less.</p>
+
+    <table class="clean">
+      <thead><tr><th>Metric</th><th>What it says</th><th>Watch out</th></tr></thead>
+      <tbody>
+        <tr><td><strong>MAPE</strong></td><td>Average error as a % of the actual - easy to explain to a business.</td><td>Explodes when actuals are near zero; punishes over- and under-forecast unevenly.</td></tr>
+        <tr><td><strong>RMSE</strong></td><td>Typical error in the series' own units; large errors dominate.</td><td>Not comparable across series of different scale; sensitive to outliers.</td></tr>
+        <tr><td><strong>MASE</strong></td><td>Error relative to the naive baseline. &lt; 1 beats naive; scale-free.</td><td>Needs the in-sample naive error as denominator - use the seasonal version for seasonal data.</td></tr>
+      </tbody>
+    </table>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="An 80% prediction band with most actual points inside and a couple outside, showing coverage">
+        <style>
+          .b8bI { font: 700 14px Inter, sans-serif; fill: #0F172A; }
+          .b8bX { font: 400 12px Inter, sans-serif; fill: #64748B; }
+          .b8bN { font: 600 13px Inter, sans-serif; fill: #14532D; }
+          .b8bB { font: 700 12px Inter, sans-serif; fill: #991B1B; }
+        </style>
+        <text class="b8bI" x="24" y="30">Interval coverage: does the 80% band actually hold ~80% of actuals?</text>
+        <line x1="80" y1="70" x2="80" y2="220" stroke="#CBD5E1" stroke-width="1.5"/>
+        <line x1="80" y1="220" x2="840" y2="220" stroke="#CBD5E1" stroke-width="1.5"/>
+        <!-- band -->
+        <polygon points="80,110 840,96 840,178 80,164" fill="#BBF7D0"/>
+        <polyline points="80,137 840,137" fill="none" stroke="#16A34A" stroke-width="2.5"/>
+        <text class="b8bX" x="700" y="106">80% band</text>
+        <text class="b8bX" x="700" y="196">forecast median</text>
+        <!-- actual points: most inside, two outside -->
+        <circle cx="140" cy="150" r="5" fill="#334155"/>
+        <circle cx="210" cy="128" r="5" fill="#334155"/>
+        <circle cx="280" cy="158" r="5" fill="#334155"/>
+        <circle cx="350" cy="86" r="5" fill="#991B1B"/>
+        <text class="b8bB" x="336" y="78">out</text>
+        <circle cx="420" cy="140" r="5" fill="#334155"/>
+        <circle cx="490" cy="120" r="5" fill="#334155"/>
+        <circle cx="560" cy="160" r="5" fill="#334155"/>
+        <circle cx="630" cy="132" r="5" fill="#334155"/>
+        <circle cx="700" cy="196" r="5" fill="#991B1B"/>
+        <text class="b8bB" x="686" y="214">out</text>
+        <circle cx="770" cy="146" r="5" fill="#334155"/>
+        <text class="b8bX" x="360" y="248">H steps ahead →</text>
+        <rect x="24" y="270" width="14" height="14" rx="3" fill="#16A34A"/>
+        <text class="b8bN" x="46" y="282">Here 8 of 10 land inside = 80% coverage. Too few inside = interval too narrow; too many = too wide.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - ~80% of actuals should land inside the 80% band</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Why MASE is the metric to lead with<span class="mini">2 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>MAPE is what you show a business; MASE is what you defend in a model review. Its denominator is the in-sample error of the naive forecast, so it bakes the baseline straight into the score:</p>
+        <ul>
+          <li><strong>MASE = 1</strong> - you tied the naive baseline. No value added.</li>
+          <li><strong>MASE &lt; 1</strong> - you beat naive. The smaller, the better.</li>
+          <li><strong>MASE &gt; 1</strong> - a complex model losing to "same weekday last week". Do not ship it.</li>
+        </ul>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p><strong>This closes the loop on b1's promise.</strong> "Beat the baseline or do not ship" stops being a slogan the moment MASE is on the dashboard - a single number that says, unarguably, whether the complexity earned its keep.</p>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ DEMO 1 ============ -->
+  <section class="section" id="demo-1">
+    <div class="section-kicker">
+      <span class="klabel">Demo 1 of 2</span>
+      <h2>Implement MAPE, RMSE, and MASE from scratch <span class="tag demo">★ 12 min · everyone builds</span></h2>
+    </div>
+    <p class="lede">Three short functions, no black boxes. We score the seasonal-naive baseline and one model (a 7-day moving average) on the Lumen holdout so you can read all three numbers side by side - and watch MASE tell you plainly whether the model beat naive.</p>
+
+    <div class="steps">
+      <div class="step"><p>Rebuild the Lumen daily series and the time split from b1 (train / test, horizon H).</p></div>
+      <div class="step"><p>Write MAPE, RMSE, and MASE as pure functions - MASE scaled by the in-sample seasonal-naive error (m=7).</p></div>
+      <div class="step"><p>Score the seasonal-naive baseline and one model; print all three metrics for each and compare.</p></div>
+    </div>
+
+    <div class="prompt-box good"><span class="label">★ Run it now (Python) - MAPE, RMSE, MASE from scratch</span>import pandas as pd, numpy as np
+
+# rebuild the Lumen daily series + split from b1
+idx = pd.date_range("2026-01-01", periods=112, freq="D")
+season = np.array([40,55,60,50,30,-120,-140])
+i = np.arange(112)
+y = 1000 + 2.5*i + season[i % 7] + 14*np.sin(i*1.7) + 9*np.cos(i*0.6)
+s = pd.Series(np.round(y), index=idx, name="sessions")
+m, H = 7, 14
+train, test = s.iloc[:-H], s.iloc[-H:]
+
+def mape(a, f):  return np.mean(np.abs((a - f) / a)) * 100
+def rmse(a, f):  return np.sqrt(np.mean((a - f) ** 2))
+def mase(a, f, tr, m=7):
+    naive = np.mean(np.abs(tr[m:].values - tr[:-m].values))   # in-sample seasonal-naive MAE
+    return np.mean(np.abs(a - f)) / naive
+
+# two forecasts on the holdout
+snaive = pd.Series([train.iloc[-m + (k % m)] for k in range(H)], index=test.index)
+movavg = pd.Series(train.iloc[-m:].mean(), index=test.index)   # flat 7-day mean
+
+for name, fc in [("seasonal-naive", snaive), ("7d moving avg", movavg)]:
+    print(f"{name:15s}  MAPE {mape(test, fc):5.1f}%   "
+          f"RMSE {rmse(test, fc):6.1f}   MASE {mase(test, fc, train):.2f}")</div>
+
+    <div class="callout tip">
+      <strong>Read MASE first</strong>
+      Whichever line shows MASE &lt; 1 beat the naive baseline; MASE &gt; 1 did not, no matter how good its MAPE looks. On this weekly-seasonal series the flat moving average usually loses to seasonal-naive - exactly the humility lesson from b1.
+    </div>
+  </section>
+
+  <!-- ============ DEMO 2 ============ -->
+  <section class="section" id="demo-2">
+    <div class="section-kicker">
+      <span class="klabel">Demo 2 of 2</span>
+      <h2>A rolling-origin backtest loop <span class="tag demo">★ 8 min · build your own</span></h2>
+    </div>
+    <p class="lede">Now turn one number into a distribution. We slide the origin forward, refit a simple model on the expanding history, forecast H steps, score the fold, and report the mean MAPE plus its spread across folds. This is the b3 live forecaster's single MAPE, made honest - the same score, averaged over many origins instead of one.</p>
+
+    <div class="steps">
+      <div class="step"><p>Choose fold origins that each leave H future days to score against.</p></div>
+      <div class="step"><p>For each origin: train on everything before it, forecast seasonal-naive H steps, record the fold MAPE.</p></div>
+      <div class="step"><p>Report mean MAPE and standard deviation across folds - the headline and the trust range.</p></div>
+    </div>
+
+    <div class="prompt-box good"><span class="label">★ Run it now (Python) - rolling-origin backtest</span># hand loop (mirrors sklearn.model_selection.TimeSeriesSplit, but H-step folds)
+n_folds = 6
+fold_mapes = []
+for k in range(n_folds):
+    # origin marches back from the end; each fold scores the next H days
+    end = len(s) - (n_folds - 1 - k) * H
+    if end - H &lt; 2 * m:                      # need enough history to train
+        continue
+    tr, te = s.iloc[:end - H], s.iloc[end - H:end]
+    fc = pd.Series([tr.iloc[-m + (j % m)] for j in range(len(te))], index=te.index)
+    fold_mapes.append(mape(te, fc))
+
+fold_mapes = np.array(fold_mapes)
+print("per-fold MAPE:", np.round(fold_mapes, 1))
+print(f"rolling-origin MAPE: {fold_mapes.mean():.1f}% "
+      f"+/- {fold_mapes.std():.1f}   (over {len(fold_mapes)} folds)")</div>
+
+    <div class="callout example">
+      <span class="ex-pill">Real world</span>
+      <p><strong>The spread is the point.</strong> A model with mean MAPE 9% +/- 2% is a very different bet from 9% +/- 8%. Swap the seasonal-naive step for ETS, ARIMA, Prophet, or your gradient-boosting model and rank them by <em>mean backtested MASE</em>, not by whoever won a single lucky holdout. That ranking is the one you defend in a review - and the honest version of the ladder the b3 live forecaster hints at.</p>
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Try it yourself - this week <span class="tag exercise">◐ 30-45 min total</span></h2>
+    </div>
+    <ul>
+      <li>Score your own model from an earlier session with all three metrics on a fixed holdout. Note where MAPE and MASE disagree, and why.</li>
+      <li>Run the rolling-origin backtest with 6-8 folds. Report mean MAPE and its spread, and compare it to your single-holdout number - how far off was the one-shot score?</li>
+      <li>Rank two models by mean backtested MASE. State which you would ship and defend it in one sentence.</li>
+      <li>Check interval coverage: what fraction of test actuals fell inside your 80% band? If it is far from 80%, your interval is mis-sized.</li>
+      <li>Optional: read FPP3 chapter 5 (Hyndman &amp; Athanasopoulos) on evaluation and time-series cross-validation.</li>
+    </ul>
+  </section>
+
+  <!-- ============ SOURCES ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Source material</span>
+      <h2>Sources covered (cited)</h2>
+    </div>
+    <p class="lede">Taught from the forecasting canon on evaluation. This session covers:</p>
+    <div class="covered">
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Forecasting: Principles and Practice, 3rd ed (Hyndman &amp; Athanasopoulos, FPP3) - otexts.com/fpp3</span><span class="note">Ch. 5 · evaluation, MAPE/RMSE/MASE, time-series cross-validation (rolling origin)</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">M-competitions (Makridakis, M4/M5)</span><span class="note">Framing · MASE as the scale-free, beat-the-naive scoreboard</span></div>
+    </div>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions before you go 🎯 <span class="tag exercise">◐ 90 seconds</span></h2>
+    </div>
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">1 · Why prefer rolling-origin CV over a single holdout?</p>
+      <button class="qopt" type="button">A · It trains faster</button>
+      <button class="qopt" type="button">B · It lets you shuffle the data safely</button>
+      <button class="qopt" type="button">C · One holdout is noisy; averaging error over many forward folds gives a stable score plus its spread</button>
+      <p class="qwhy">A single split can flatter or punish a model by luck. Rolling-origin marches the origin forward, so you get a mean error and a spread that says how much to trust it.</p>
+    </div>
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">2 · What does MASE &lt; 1 mean?</p>
+      <button class="qopt" type="button">A · The forecast is perfect</button>
+      <button class="qopt" type="button">B · The model beat the naive baseline (error smaller than in-sample naive error)</button>
+      <button class="qopt" type="button">C · The prediction interval is too wide</button>
+      <p class="qwhy">MASE scales your error by the in-sample naive error. Below 1 means you beat naive; above 1 means a complex model lost to the baseline and should not ship.</p>
+    </div>
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">3 · An 80% prediction interval should contain roughly what share of actuals?</p>
+      <button class="qopt" type="button">A · About 80% - fewer means it is too narrow, more means it is too wide</button>
+      <button class="qopt" type="button">B · Exactly 100%</button>
+      <button class="qopt" type="button">C · Coverage does not matter if MAPE is low</button>
+      <p class="qwhy">Coverage checks interval honesty. If only 50% of actuals land inside an 80% band, the interval is overconfident; a point forecast without a well-calibrated interval is false confidence.</p>
+    </div>
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Builder session 8 cheat sheet <span>· pin this</span></h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>One holdout is noisy</b><span>a single split can flatter or punish by luck. Never decide a model on one number.</span></div>
+      <div class="cheat-item"><b>Rolling-origin CV</b><span>train before the origin, forecast next H, score, roll forward, average. Expanding or sliding window.</span></div>
+      <div class="cheat-item"><b>Never leak past the origin</b><span>fit scaling, features, and model selection inside the train window only.</span></div>
+      <div class="cheat-item"><b>MAPE</b><span>error as a % - intuitive, but breaks near zeros.</span></div>
+      <div class="cheat-item"><b>RMSE</b><span>error in the series' units, punishes big misses; not comparable across scales.</span></div>
+      <div class="cheat-item"><b>MASE</b><span>error / in-sample naive error. &lt; 1 beats naive, scale-free - the metric to lead with.</span></div>
+      <div class="cheat-item"><b>Interval coverage</b><span>an 80% band should hold ~80% of actuals. Too few = too narrow; too many = too wide.</span></div>
+      <div class="cheat-item"><b>Next session</b><span>b9 - productionizing: retrain cadence, batch serving, the forecast API + dashboard.</span></div>
+    </div>
+  </section>
+
+  <footer class="pagefoot">
+    <span>Builder session 8 of 10 · learn-timeseries-forecasting-with-phoebe · by Phoebe Fu &nbsp;·&nbsp; 📚 <a href="https://phoebefu6.github.io/learn-with-phoebe/">Learn with Phoebe ↗</a></span>
+    <span><a href="../index.html">← All sessions</a> &nbsp;·&nbsp; <a href="b9-productionizing.html">Next: Productionizing →</a></span>
+  </footer>
+
+</main>
+
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

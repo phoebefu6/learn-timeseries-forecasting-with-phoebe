@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leader session 3 · The methods, without math - learn timeseries forecasting with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-timeseries-forecasting-with-phoebe</a> / Leader session 3 of 6</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn Timeseries Forecasting with Phoebe · Leader track · Session 3 of 6</div>
+    <h1>The methods, without math: <span class="accent">a ladder, not a mystery</span></h1>
+    <p class="sub">"Which model should we use?" is the wrong first question. The right one is which rung of a well-worn ladder fits your data, your horizon, and your team - and whether that rung actually beats the honest baseline on a backtest. This session walks the ladder rung by rung in plain English: what each method is, when it fits, and what it costs. No equations. By the end you can read a vendor's or a data scientist's model choice and ask the one question that matters.</p>
+    <div class="chip-row">
+      <span class="chip level">🟡 Leader track</span>
+      <span class="chip audience">Leaders: PM · biz · product</span>
+      <span class="chip audience">No code · concepts + decisions</span>
+      <span class="chip time">Session 3 of 6</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Welcome</span>
+      <span class="a2" style="flex:5">3-24 · The ladder, rung by rung</span>
+      <span class="a3" style="flex:4">24-40 · The lesson + which rung fits</span>
+      <span class="a4" style="flex:1">40-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>How to think about "the methods"</h2>
+    </div>
+    <p class="lede">There are dozens of forecasting methods, but they line up on a single ladder from simple to complex. Each higher rung can capture more structure - and asks for more data, more setup, and more skill in return. As a leader you do not need the math. You need to know what lives on each rung, when it is the right reach, and the one accountability question that keeps the whole thing honest: <strong>did it beat the baseline on a backtest?</strong></p>
+    <div class="legend">
+      <span class="pill solid">Live - presented in session</span>
+      <span class="pill light">Self-study - read after class</span>
+      <span class="pill inkpill">Sources covered (cited)</span>
+    </div>
+    <div class="callout win">
+      <strong>★ What you walk out with today</strong>
+      A plain-English map of the six rungs (baseline, exponential smoothing/ETS, ARIMA/SARIMA, Prophet, ML/gradient boosting, deep), the trade-off each one carries, a simple chooser for matching a rung to your situation, and the humility lesson from the M-competitions - climbing higher is not automatically better.
+    </div>
+  </section>
+
+  <!-- ============ PART 1: THE LADDER ============ -->
+  <section class="section" id="ladder">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers FPP3, Box-Jenkins, Prophet, deep</span>
+      <h2>The method ladder, rung by rung <span class="tag concept">10 min live</span></h2>
+    </div>
+    <p class="lede">Read this from the bottom up. The lowest rung is the honest starting line every other method has to beat. Each rung above adds power - and a price in data and setup. The point of the picture is not to memorise the names; it is to feel that <strong>higher costs more and is not automatically better</strong>.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A ladder of forecasting methods rising from baseline at the bottom to deep nets at the top, with an arrow showing complexity and data increasing upward">
+        <style>
+          .a3lT { font: 700 13px Inter, sans-serif; fill: #0F172A; }
+          .a3lW { font: 700 13px Inter, sans-serif; fill: #FFFFFF; }
+          .a3lS { font: 400 12px Inter, sans-serif; fill: #334155; }
+          .a3lSd { font: 400 12px Inter, sans-serif; fill: #DCFCE7; }
+          .a3lR { font: 600 12px Inter, sans-serif; fill: #64748B; }
+          .a3lN { font: 600 13px Inter, sans-serif; fill: #14532D; }
+        </style>
+        <!-- left rail arrow: complexity + data up -->
+        <line x1="60" y1="300" x2="60" y2="34" stroke="#16A34A" stroke-width="2"/>
+        <polygon points="60,26 54,40 66,40" fill="#16A34A"/>
+        <text class="a3lR" x="26" y="180" transform="rotate(-90 26 180)">more data · more setup · more complexity  ↑</text>
+        <!-- rungs, bottom = baseline -->
+        <rect x="90" y="266" width="766" height="34" rx="6" fill="#E2E8F0"/>
+        <text class="a3lT" x="104" y="288">Baseline</text>
+        <text class="a3lS" x="300" y="288">naive · seasonal-naive · the honest starting line every model must beat</text>
+        <rect x="90" y="220" width="766" height="34" rx="6" fill="#BBF7D0"/>
+        <text class="a3lT" x="104" y="242">Smoothing / ETS</text>
+        <text class="a3lS" x="300" y="242">a weighted memory · fast, robust, little data · short horizons</text>
+        <rect x="90" y="174" width="766" height="34" rx="6" fill="#86EFAC"/>
+        <text class="a3lT" x="104" y="196">ARIMA / SARIMA</text>
+        <text class="a3lS" x="300" y="196">models the correlations · more setup · stable, structured series</text>
+        <rect x="90" y="128" width="766" height="34" rx="6" fill="#4ADE80"/>
+        <text class="a3lT" x="104" y="150">Prophet</text>
+        <text class="a3lS" x="300" y="150">trend + seasonality + holidays · analyst-friendly to configure</text>
+        <rect x="90" y="82" width="766" height="34" rx="6" fill="#16A34A"/>
+        <text class="a3lW" x="104" y="104">ML / boosting</text>
+        <text class="a3lSd" x="300" y="104">forecasting as regression on engineered features · many related series</text>
+        <rect x="90" y="36" width="766" height="34" rx="6" fill="#14532D"/>
+        <text class="a3lW" x="104" y="58">Deep nets</text>
+        <text class="a3lSd" x="300" y="58">DeepAR · N-BEATS · TFT · many series, long horizons, lots of data · heaviest</text>
+        <!-- bottom note -->
+        <rect x="24" y="324" width="14" height="14" rx="3" fill="#16A34A"/>
+        <text class="a3lN" x="46" y="336">M-competition lesson: climbing higher is not automatically better.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the six rungs, simple at the bottom, heaviest at the top</figcaption>
+    </figure>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>The bottom three rungs - baseline, smoothing, ARIMA<span class="mini">4 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <ul>
+          <li><strong>Baselines (naive, seasonal-naive).</strong> "Tomorrow equals today," or "this Tuesday equals last Tuesday." No training, no math. This is the honest starting line - on seasonal data it is shockingly hard to beat, which is exactly why every model is measured against it.</li>
+          <li><strong>Exponential smoothing / ETS.</strong> A weighted memory of the recent past, weighting fresh days more than old ones. Fast, robust, works on little data, and strong for short horizons. The reliable workhorse when you have one series and not much history.</li>
+          <li><strong>ARIMA / SARIMA.</strong> Models the correlations inside the series - how today relates to recent days and to the same day last season. More setup and expertise to fit well, and it shines on stable, structured series (the Box-Jenkins tradition).</li>
+        </ul>
+        <div class="callout tip">
+          <strong>Trade-off in one line</strong>
+          Lower rungs ask for less data and less setup and fail gracefully. That is a feature, not a weakness - most business forecasting lives happily on these three rungs.
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The top three rungs - Prophet, ML, deep<span class="mini">4 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <ul>
+          <li><strong>Prophet.</strong> Breaks a series into trend + seasonality + holidays, with knobs an analyst can read and adjust. Designed at scale to be approachable for non-specialists (Taylor &amp; Letham, 2018). Great when calendars and holidays drive the series.</li>
+          <li><strong>ML / gradient boosting.</strong> Reframes forecasting as regression: build features (last week's value, rolling averages, day-of-week, promotions) and let a model like XGBoost or LightGBM learn the mapping. Pays off when you have many related series and rich context.</li>
+          <li><strong>Deep models (DeepAR, N-BEATS, TFT).</strong> Neural networks that learn across many series at once, good for long horizons and large data. The heaviest rung - most data, most compute, most expertise - and cited here, not trained from scratch. They earn their place only when the data volume justifies them.</li>
+        </ul>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p><strong>The rung is a business decision, not just a technical one.</strong> A deep model that needs a team to maintain and thousands of series to shine is the wrong reach for a single weekly demand line. Match the tool to the problem, not to the hype.</p>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2: THE LESSON ============ -->
+  <section class="section" id="lesson">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers the M-competitions</span>
+      <h2>The central lesson: simple is hard to beat <span class="tag concept">5 min live</span></h2>
+    </div>
+    <p class="lede">The M-competitions are the field's biggest open bake-offs, run over thousands of real series. Their repeated finding is humbling: <strong>more complex is not automatically more accurate</strong>. Simple methods, and combinations of a few methods, are stubbornly hard to beat. Complexity has to earn its place with evidence, not with a good story.</p>
+
+    <div class="callout example">
+      <span class="ex-pill">Real world</span>
+      <p><strong>Why this matters to a leader.</strong> When a vendor or a team proposes a heavy model, the value question is not "is it sophisticated?" It is "does it beat the seasonal-naive baseline on a fair backtest, by enough to justify the cost to build and run it?" If nobody can show you that number, the sophistication is decoration.</p>
+    </div>
+
+    <div class="callout win">
+      <strong>Your one accountability question</strong>
+      For any forecasting proposal, ask: <em>"Did it beat the baseline on a backtest, and by how much?"</em> A backtest replays the model on past data as if it were live. No baseline comparison means no evidence - and a point forecast with no prediction interval means false confidence.
+    </div>
+  </section>
+
+  <!-- ============ PART 3: THE CHOOSER ============ -->
+  <section class="section" id="chooser">
+    <div class="section-kicker">
+      <span class="klabel">Part 3 · a simple chooser</span>
+      <h2>Which rung fits your situation <span class="tag concept">6 min live</span></h2>
+    </div>
+    <p class="lede">Three questions settle most choices: how much history do you have, how many related series, and how long is the horizon. Start at the lowest rung that meets the need and climb only when a backtest says the next rung earns its keep.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 268" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A chooser mapping three situations to a recommended rung: little data to baseline or ETS, moderate structured data to ARIMA or Prophet, lots of data across many series to ML or deep">
+        <style>
+          .a3cH { font: 700 14px Inter, sans-serif; fill: #0F172A; }
+          .a3cQ { font: 600 13px Inter, sans-serif; fill: #0F172A; }
+          .a3cW { font: 700 14px Inter, sans-serif; fill: #FFFFFF; }
+          .a3cI { font: 700 14px Inter, sans-serif; fill: #0F172A; }
+          .a3cN { font: 600 13px Inter, sans-serif; fill: #14532D; }
+        </style>
+        <text class="a3cH" x="24" y="26">Match the rung to your situation</text>
+        <!-- row A -->
+        <rect x="24" y="44" width="452" height="46" rx="8" fill="#F0FDF4" stroke="#16A34A"/>
+        <text class="a3cQ" x="42" y="72">Little data · one series · short horizon</text>
+        <line x1="484" y1="67" x2="548" y2="67" stroke="#CBD5E1" stroke-width="2"/>
+        <polygon points="556,67 544,61 544,73" fill="#CBD5E1"/>
+        <rect x="564" y="44" width="292" height="46" rx="8" fill="#4ADE80"/>
+        <text class="a3cI" x="582" y="72">Baseline / ETS</text>
+        <!-- row B -->
+        <rect x="24" y="106" width="452" height="46" rx="8" fill="#DCFCE7" stroke="#16A34A"/>
+        <text class="a3cQ" x="42" y="134">Moderate data · one series · clear structure</text>
+        <line x1="484" y1="129" x2="548" y2="129" stroke="#CBD5E1" stroke-width="2"/>
+        <polygon points="556,129 544,123 544,135" fill="#CBD5E1"/>
+        <rect x="564" y="106" width="292" height="46" rx="8" fill="#16A34A"/>
+        <text class="a3cW" x="582" y="134">ARIMA / Prophet</text>
+        <!-- row C -->
+        <rect x="24" y="168" width="452" height="46" rx="8" fill="#BBF7D0" stroke="#16A34A"/>
+        <text class="a3cQ" x="42" y="196">Lots of data · many related series · long horizon</text>
+        <line x1="484" y1="191" x2="548" y2="191" stroke="#CBD5E1" stroke-width="2"/>
+        <polygon points="556,191 544,185 544,197" fill="#CBD5E1"/>
+        <rect x="564" y="168" width="292" height="46" rx="8" fill="#14532D"/>
+        <text class="a3cW" x="582" y="196">ML / Deep nets</text>
+        <!-- bottom note -->
+        <rect x="24" y="238" width="14" height="14" rx="3" fill="#16A34A"/>
+        <text class="a3cN" x="46" y="250">Start at the lowest rung that meets the need. Climb only when a backtest earns it.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - three questions, one rung</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Why combinations often win<span class="mini">2 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>A recurring M-competition result is that averaging a few reasonable forecasts often beats any single one of them. The errors of different methods partly cancel out.</p>
+        <ul>
+          <li><strong>You do not have to pick one winner.</strong> A blend of, say, ETS and a boosting model is a legitimate - often better - answer.</li>
+          <li><strong>It lowers risk.</strong> If one method degrades, the blend cushions the fall.</li>
+          <li><strong>Ask about it.</strong> "Did we try a simple combination?" is a fair challenge to a single-model pitch.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ WALK-THROUGH ============ -->
+  <section class="section" id="walkthrough">
+    <div class="section-kicker">
+      <span class="klabel">Walk-through · a thought exercise</span>
+      <h2>Read a model choice like a leader <span class="tag demo">★ 6 min · think it through</span></h2>
+    </div>
+    <p class="lede">A vendor pitches a deep-learning forecaster for your weekly demand. Walk the ladder in your head before you nod.</p>
+
+    <div class="steps">
+      <div class="step"><p>Locate the pitch on the ladder. A deep net is the top rung - the heaviest reach in data, cost, and expertise.</p></div>
+      <div class="step"><p>Check the situation against the chooser. One weekly series with a couple of years of history is "little data, one series" - the bottom rungs, not the top.</p></div>
+      <div class="step"><p>Ask the accountability question. "Did it beat seasonal-naive and a simple ETS on a backtest, and by how much?"</p></div>
+      <div class="step"><p>Decide on evidence. If the heavy model does not clearly beat the cheap ones on a fair backtest, the right call is the lower rung - and the vendor just told you a lot about themselves.</p></div>
+    </div>
+
+    <div class="callout tip">
+      <strong>The pattern to remember</strong>
+      Situation sets the rung, the baseline sets the bar, the backtest settles the argument. You do not need the math to run this loop - you need the discipline to insist on it.
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Try it yourself - this week <span class="tag exercise">◐ 20-30 min total</span></h2>
+    </div>
+    <ul>
+      <li>Pick one real forecasting need in your org - demand, staffing, cash-flow, web traffic, tickets.</li>
+      <li>Answer the three chooser questions for it: how much history, how many related series, how long a horizon.</li>
+      <li>Name the rung you would start on, and write one sentence justifying it against the trade-off.</li>
+      <li>Write the accountability question you would ask the team building it, in your own words.</li>
+      <li>Optional: skim FPP3 chapter 1 (Hyndman &amp; Athanasopoulos) - the open textbook this course follows - for the "what can be forecast" framing.</li>
+    </ul>
+  </section>
+
+  <!-- ============ SOURCES ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Source material</span>
+      <h2>Sources covered (cited)</h2>
+    </div>
+    <p class="lede">Taught from the forecasting canon and the published empirical evidence. This session covers:</p>
+    <div class="covered">
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Forecasting: Principles and Practice, 3rd ed (Hyndman &amp; Athanasopoulos, FPP3)</span><span class="note">The ladder · baselines, ETS, ARIMA/SARIMA in plain English</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">Taylor &amp; Letham (2018), "Forecasting at Scale" (Prophet), The American Statistician 72(1):37-45</span><span class="note">Prophet rung · decomposable trend + seasonality + holidays</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">M-competitions (Makridakis, M4 2018 / M5 2020)</span><span class="note">The central lesson · simple methods and combinations are hard to beat</span></div>
+    </div>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions before you go 🎯 <span class="tag exercise">◐ 90 seconds</span></h2>
+    </div>
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">1 · What sits on the lowest rung of the method ladder?</p>
+      <button class="qopt" type="button">A · A deep neural network</button>
+      <button class="qopt" type="button">B · The naive / seasonal-naive baseline every model must beat</button>
+      <button class="qopt" type="button">C · Prophet</button>
+      <p class="qwhy">The baseline is the honest starting line. On seasonal data "same weekday last week" is hard to beat, which is why every method is measured against it.</p>
+    </div>
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">2 · What is the central lesson of the M-competitions?</p>
+      <button class="qopt" type="button">A · Only deep learning wins now</button>
+      <button class="qopt" type="button">B · Never combine methods</button>
+      <button class="qopt" type="button">C · More complex is not automatically better - simple methods and combinations are hard to beat</button>
+      <p class="qwhy">Across thousands of series, simple methods and blends repeatedly hold their own. Complexity must earn its place with backtested accuracy, not with a good story.</p>
+    </div>
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">3 · A vendor pitches a heavy model. What is the leader's one question?</p>
+      <button class="qopt" type="button">A · "Did it beat the baseline on a backtest, and by how much?"</button>
+      <button class="qopt" type="button">B · "Which programming language is it written in?"</button>
+      <button class="qopt" type="button">C · "How many parameters does it have?"</button>
+      <p class="qwhy">No baseline comparison means no evidence. The backtest replays the model on past data as if it were live; the margin over the baseline is what justifies the cost.</p>
+    </div>
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Leader session 3 cheat sheet <span>· pin this</span></h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>It is a ladder</b><span>simple at the bottom, heaviest on top. Higher captures more structure and costs more.</span></div>
+      <div class="cheat-item"><b>Baseline</b><span>naive / seasonal-naive - the honest starting line every model must beat.</span></div>
+      <div class="cheat-item"><b>Smoothing / ETS</b><span>a weighted memory. Fast, robust, little data, short horizons.</span></div>
+      <div class="cheat-item"><b>ARIMA / SARIMA</b><span>models the correlations. More setup; strong on stable, structured series.</span></div>
+      <div class="cheat-item"><b>Prophet</b><span>trend + seasonality + holidays, analyst-friendly (Taylor &amp; Letham 2018).</span></div>
+      <div class="cheat-item"><b>ML / boosting</b><span>forecasting as regression on features. Shines with many related series.</span></div>
+      <div class="cheat-item"><b>Deep nets</b><span>DeepAR / N-BEATS / TFT - many series, long horizons, lots of data. Heaviest.</span></div>
+      <div class="cheat-item"><b>The one question</b><span>"Did it beat the baseline on a backtest?" No baseline = no evidence.</span></div>
+      <div class="cheat-item"><b>Next session</b><span>a4 - the team and the pipeline: who does what, and the artifact each role hands off.</span></div>
+    </div>
+  </section>
+
+  <footer class="pagefoot">
+    <span>Leader session 3 of 6 · learn-timeseries-forecasting-with-phoebe · by Phoebe Fu &nbsp;·&nbsp; 📚 <a href="https://phoebefu6.github.io/learn-with-phoebe/">Learn with Phoebe ↗</a></span>
+    <span><a href="../index.html">← All sessions</a> &nbsp;·&nbsp; <a href="a4-team-pipeline-rr.html">Next: The team &amp; the pipeline (R&amp;R) →</a></span>
+  </footer>
+
+</main>
+
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

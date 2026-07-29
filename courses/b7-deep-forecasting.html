@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Builder session 7 · Deep forecasting - learn timeseries forecasting with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-timeseries-forecasting-with-phoebe</a> / Builder session 7 of 10</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn Timeseries Forecasting with Phoebe · Builder track · Session 7 of 10</div>
+    <h1>Deep forecasting: <span class="accent">a map of the landmarks, not a from-scratch build</span></h1>
+    <p class="sub">Deep-learning forecasters are real and, at scale, powerful - but this session is honest about what it is: a guided map of the published models, not a training tutorial. We survey why deep models exist, the three landmarks the field keeps citing (DeepAR, N-BEATS, TFT), and show illustrative sketches of how they are fed and called. Full training - GPUs, tuning, tooling - belongs in a dedicated deep-learning course. Read this to know the map and when it is worth walking.</p>
+    <div class="chip-row">
+      <span class="chip level">🔴 Builder track</span>
+      <span class="chip audience">Practitioners: analysts · data scientists · engineers</span>
+      <span class="chip audience">Python 3.10+ · a notebook</span>
+      <span class="chip time">Survey + sketches</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Framing</span>
+      <span class="a2" style="flex:4">3-18 · Why deep + the three landmarks</span>
+      <span class="a3" style="flex:5">18-42 · Sketches: how they are fed + called</span>
+      <span class="a4" style="flex:1">42-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>What this session is - and is not</h2>
+    </div>
+    <p class="lede">Be clear before we start: <strong>this is a survey, not a build.</strong> We map the deep-forecasting landscape and cite the primary papers, and the Python here is <strong>illustrative sketch code</strong> - clearly labelled - that shows how these models are <em>fed</em> and <em>called</em>, never a model trained on real data. Deep forecasters need lots of data, tooling (GluonTS, PyTorch-Forecasting, Darts), and compute; full training belongs in a dedicated deep-learning course. And the honest headline from the M-competitions: on a single short series, deep models often do <strong>not</strong> beat a well-tuned ETS or ARIMA. Reach for them when the problem shape earns it.</p>
+    <div class="legend">
+      <span class="pill solid">Live - presented in session</span>
+      <span class="pill light">Self-study - read after class</span>
+      <span class="pill peach">★ Illustrative sketch (not trained)</span>
+      <span class="pill inkpill">Sources covered (cited)</span>
+    </div>
+    <div class="callout win">
+      <strong>★ What you walk out with today</strong>
+      A clear mental map of why deep forecasting exists (many related series, long horizons, exogenous inputs, one global model across series), the three landmark models and what each one is for, a sketch of the sliding-window dataset that feeds them, the API shape of a library call, and - most usefully - a sober sense of when a deep model is worth it and when seasonal-naive plus ETS already wins.
+    </div>
+    <div class="callout tip">
+      <strong>⚠ Re-verify - this area moves fast</strong>
+      Deep forecasting changes quickly. The three papers below are the durable landmarks, but libraries, defaults, and new architectures shift often. Treat the sketch code as pseudocode for the current API, and check each library's live docs before you rely on it.
+    </div>
+  </section>
+
+  <!-- ============ PART 1: WHY DEEP ============ -->
+  <section class="section" id="why">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers DeepAR / global-model motivation</span>
+      <h2>Why a deep, global model at all <span class="tag concept">6 min live</span></h2>
+    </div>
+    <p class="lede">Everything up the ladder so far - ETS, ARIMA, Prophet - fits <strong>one model per series</strong>. That is fine for Lumen's single daily-sessions line. But when you have thousands of related series (every product, every store, every region), deep models offer something classical methods cannot: a single <strong>global</strong> model that learns shared patterns across all of them, borrowing strength from short and new series. They also handle <strong>long horizons</strong>, many <strong>exogenous inputs</strong> (price, promotions, weather), and produce <strong>probabilistic</strong> outputs (quantiles), not just a point.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Classical fits one model per series; a deep global model trains once across many related series">
+        <style>
+          .b7aI { font: 700 14px Inter, sans-serif; fill: #0F172A; }
+          .b7aH { font: 700 13px Inter, sans-serif; fill: #FFFFFF; }
+          .b7aX { font: 400 12px Inter, sans-serif; fill: #64748B; }
+          .b7aN { font: 600 13px Inter, sans-serif; fill: #14532D; }
+          .b7aG { font: 400 12px Inter, sans-serif; fill: #DCFCE7; }
+        </style>
+        <text class="b7aI" x="24" y="32">Classical - one model per series</text>
+        <text class="b7aI" x="470" y="32">Deep - one global model for all series</text>
+        <rect x="20" y="44" width="406" height="250" rx="10" fill="#F1F5F9"/>
+        <rect x="454" y="44" width="406" height="250" rx="10" fill="#F0FDF4" stroke="#16A34A" stroke-width="1.5"/>
+
+        <!-- left: three rows, each series + its own model box -->
+        <g>
+          <polyline points="36,90 66,80 96,96 126,78 150,88" fill="none" stroke="#334155" stroke-width="2"/>
+          <path d="M158,88 L180,88" stroke="#CBD5E1" stroke-width="2" marker-end="url(#a7)"/>
+          <rect x="186" y="72" width="150" height="34" rx="7" fill="#334155"/><text class="b7aH" x="210" y="94">model A</text>
+          <text class="b7aX" x="344" y="93">→ fc A</text>
+        </g>
+        <g>
+          <polyline points="36,165 66,155 96,171 126,153 150,163" fill="none" stroke="#334155" stroke-width="2"/>
+          <path d="M158,163 L180,163" stroke="#CBD5E1" stroke-width="2" marker-end="url(#a7)"/>
+          <rect x="186" y="147" width="150" height="34" rx="7" fill="#334155"/><text class="b7aH" x="210" y="169">model B</text>
+          <text class="b7aX" x="344" y="168">→ fc B</text>
+        </g>
+        <g>
+          <polyline points="36,240 66,230 96,246 126,228 150,238" fill="none" stroke="#334155" stroke-width="2"/>
+          <path d="M158,238 L180,238" stroke="#CBD5E1" stroke-width="2" marker-end="url(#a7)"/>
+          <rect x="186" y="222" width="150" height="34" rx="7" fill="#334155"/><text class="b7aH" x="210" y="244">model C</text>
+          <text class="b7aX" x="344" y="243">→ fc C</text>
+        </g>
+        <text class="b7aX" x="36" y="285">N series → N separate models to fit + maintain</text>
+
+        <!-- right: three series all feed one global box -->
+        <polyline points="466,92 496,82 526,98 556,80 580,90" fill="none" stroke="#16A34A" stroke-width="2"/>
+        <polyline points="466,165 496,155 526,171 556,153 580,163" fill="none" stroke="#16A34A" stroke-width="2"/>
+        <polyline points="466,238 496,228 526,244 556,226 580,236" fill="none" stroke="#16A34A" stroke-width="2"/>
+        <path d="M588,90 L636,150" stroke="#94A3B8" stroke-width="2" marker-end="url(#a7)"/>
+        <path d="M588,163 L636,168" stroke="#94A3B8" stroke-width="2" marker-end="url(#a7)"/>
+        <path d="M588,236 L636,188" stroke="#94A3B8" stroke-width="2" marker-end="url(#a7)"/>
+        <rect x="642" y="108" width="180" height="120" rx="10" fill="#16A34A"/>
+        <text class="b7aH" x="662" y="158">Global deep model</text>
+        <text class="b7aG" x="662" y="180">one model, trained</text>
+        <text class="b7aG" x="662" y="198">across all series</text>
+        <text class="b7aX" x="474" y="285">Shared patterns; short + new series borrow strength</text>
+
+        <defs>
+          <marker id="a7" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#94A3B8"/></marker>
+        </defs>
+        <rect x="24" y="312" width="14" height="14" rx="3" fill="#16A34A"/>
+        <text class="b7aN" x="46" y="324">Deep earns its place with MANY related series - not one short line, where ETS/ARIMA usually win.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - one model per series vs one global model across all</figcaption>
+    </figure>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>The four things deep models are actually good at<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Deep forecasting is not "better ARIMA". It solves a different shape of problem:</p>
+        <ul>
+          <li><strong>Many related series.</strong> Train once, globally, and every series - including short and brand-new ones - benefits from patterns learned elsewhere.</li>
+          <li><strong>Long horizons.</strong> Multi-horizon architectures forecast the whole path at once rather than recursing one step at a time.</li>
+          <li><strong>Exogenous inputs.</strong> Known-future covariates (promotions, holidays, price) and static features (category, region) go straight in.</li>
+          <li><strong>Probabilistic output.</strong> Quantiles or a full distribution, so the prediction interval is a first-class citizen, not an afterthought.</li>
+        </ul>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p><strong>Lumen is the wrong-shaped problem - on purpose.</strong> One daily-sessions series is exactly where a global deep model has nothing to borrow from. If Lumen grew to forecast every SKU across every market daily, that fleet of related series is when DeepAR or TFT start to pay off. Match the model to the shape of the problem, not to the hype.</p>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2: THE LANDMARKS ============ -->
+  <section class="section" id="landmarks">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers DeepAR, N-BEATS, TFT</span>
+      <h2>Three landmarks worth knowing <span class="tag concept">5 min live</span></h2>
+    </div>
+    <p class="lede">Three papers anchor the modern deep-forecasting map. You do not need to implement them tonight - you need to know what each is for, so you can pick the right one (or decide none of them beats your baseline).</p>
+
+    <table class="clean">
+      <thead><tr><th>Model</th><th>What it is</th><th>Why it matters</th></tr></thead>
+      <tbody>
+        <tr><td><strong>DeepAR</strong><br><span class="tag concept">Salinas et al. 2020</span></td><td>An autoregressive RNN trained globally across many series, predicting a <em>distribution</em> (e.g. quantiles), not a point.</td><td>The reference for probabilistic, at-scale forecasting when you have a large panel of related series.</td></tr>
+        <tr><td><strong>N-BEATS</strong><br><span class="tag concept">Oreshkin et al. 2020</span></td><td>A pure deep residual stack of basis-expansion blocks - no RNN, no attention - with an interpretable trend/seasonality variant.</td><td>Strong accuracy from a simple, fast architecture; the interpretable blocks echo classical decomposition.</td></tr>
+        <tr><td><strong>TFT</strong><br><span class="tag concept">Lim et al. 2021</span></td><td>Temporal Fusion Transformer: attention over past inputs plus <em>known-future</em> covariates, multi-horizon, with built-in interpretability.</td><td>The go-to when you have rich known-future inputs and want to see which ones the model leans on.</td></tr>
+      </tbody>
+    </table>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Past window and known-future covariates feed an encoder-decoder with attention, producing a multi-horizon forecast with quantiles">
+        <style>
+          .b7bI { font: 700 14px Inter, sans-serif; fill: #0F172A; }
+          .b7bH { font: 700 13px Inter, sans-serif; fill: #FFFFFF; }
+          .b7bK { font: 700 13px Inter, sans-serif; fill: #14532D; }
+          .b7bX { font: 400 12px Inter, sans-serif; fill: #64748B; }
+          .b7bN { font: 600 13px Inter, sans-serif; fill: #14532D; }
+          .b7bG { font: 400 12px Inter, sans-serif; fill: #DCFCE7; }
+        </style>
+        <text class="b7bI" x="24" y="30">Encoder-decoder shape: what goes in, what comes out</text>
+
+        <!-- past target window -->
+        <rect x="24" y="52" width="210" height="70" rx="9" fill="#334155"/>
+        <text class="b7bH" x="42" y="78">Past target window</text>
+        <polyline points="42,110 72,102 102,112 132,98 162,108 192,96 216,104" fill="none" stroke="#86EFAC" stroke-width="2"/>
+        <!-- known-future inputs -->
+        <rect x="24" y="150" width="210" height="70" rx="9" fill="#DCFCE7" stroke="#16A34A" stroke-width="1.5"/>
+        <text class="b7bK" x="42" y="176">Known-future inputs</text>
+        <text class="b7bX" x="42" y="198">holidays · promos · price</text>
+
+        <path d="M234,88 L276,120" stroke="#94A3B8" stroke-width="2" marker-end="url(#b7)"/>
+        <path d="M234,184 L276,150" stroke="#94A3B8" stroke-width="2" marker-end="url(#b7)"/>
+
+        <!-- model box -->
+        <rect x="280" y="96" width="220" height="90" rx="10" fill="#16A34A"/>
+        <text class="b7bH" x="300" y="132">Encoder-decoder</text>
+        <text class="b7bH" x="300" y="152">+ attention</text>
+        <text class="b7bG" x="300" y="172">learns what to attend to</text>
+
+        <path d="M500,141 L548,141" stroke="#CBD5E1" stroke-width="2.5" marker-end="url(#b7)"/>
+
+        <!-- forecast fan with quantile band -->
+        <text class="b7bI" x="560" y="70">Multi-horizon forecast, with quantiles</text>
+        <line x1="560" y1="86" x2="560" y2="220" stroke="#CBD5E1" stroke-width="1.5"/>
+        <line x1="560" y1="220" x2="856" y2="220" stroke="#CBD5E1" stroke-width="1.5"/>
+        <polygon points="560,150 856,110 856,190 560,150" fill="#BBF7D0"/>
+        <polyline points="560,150 640,146 720,140 800,134 856,130" fill="none" stroke="#16A34A" stroke-width="2.5"/>
+        <text class="b7bX" x="612" y="122">P90</text>
+        <text class="b7bX" x="612" y="182">P10</text>
+        <text class="b7bX" x="612" y="245">H steps ahead →</text>
+
+        <defs>
+          <marker id="b7" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#94A3B8"/></marker>
+        </defs>
+        <rect x="24" y="292" width="14" height="14" rx="3" fill="#16A34A"/>
+        <text class="b7bN" x="46" y="304">TFT-style models fold known-future inputs in and output quantiles - the interval is built in.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - past window + known-future inputs → model → multi-horizon quantile forecast</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>The tooling you would actually reach for<span class="mini">2 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Nobody hand-codes these from scratch for a project. The ecosystem does the heavy lifting:</p>
+        <ul>
+          <li><strong>GluonTS</strong> - the home of DeepAR and a broad probabilistic-forecasting toolkit.</li>
+          <li><strong>PyTorch-Forecasting</strong> - production-friendly TFT, N-BEATS, DeepAR on top of PyTorch Lightning.</li>
+          <li><strong>Darts</strong> - a single, sklearn-like API across classical and deep models, easiest for a first sketch.</li>
+        </ul>
+        <div class="callout tip">
+          <strong>Baseline first, always</strong>
+          Before any of these, you already have the seasonal-naive baseline (b1) and ETS/ARIMA/Prophet (b3-b5). A deep model only earns its complexity if it beats those on a <em>backtest</em> (b8) - not on one lucky holdout.
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ DEMO 1 ============ -->
+  <section class="section" id="demo-1">
+    <div class="section-kicker">
+      <span class="klabel">Demo 1 of 2 · illustrative</span>
+      <h2>How a deep model is fed: the sliding-window dataset <span class="tag demo">★ 12 min · sketch, not a model</span></h2>
+    </div>
+    <p class="lede">You do not train anything here - you build the <em>dataset shape</em> deep models consume. A window of past values becomes the input X, the next H values become the target y, and windows are pooled across many series into one global training set. This numpy sketch runs, but it is here to build intuition, not a forecaster.</p>
+
+    <div class="steps">
+      <div class="step"><p>Slide a fixed <code>lookback</code> window across a series; each position yields one (past window → next H) training row.</p></div>
+      <div class="step"><p>Repeat for many related series and stack the windows into one pool - this is what "global" means.</p></div>
+      <div class="step"><p>Inspect the shapes: thousands of rows, each mapping a past window to a multi-step target.</p></div>
+    </div>
+
+    <div class="prompt-box good"><span class="label">★ Illustrative sketch (Python) - how deep models are fed, NOT trained</span>import numpy as np
+
+# ILLUSTRATIVE ONLY: this builds the DATASET SHAPE a deep/global model eats.
+# It trains nothing - it shows how past windows become (X, y) rows, pooled.
+
+def make_windows(series, lookback=28, horizon=14):
+    X, y = [], []
+    for t in range(lookback, len(series) - horizon + 1):
+        X.append(series[t - lookback:t])       # past window  -&gt; inputs
+        y.append(series[t:t + horizon])         # next H values -&gt; targets
+    return np.array(X), np.array(y)
+
+# pool windows from MANY related series into ONE training set (global model)
+rng = np.random.default_rng(7)
+series_bank = [1000 + 3*np.arange(180) + rng.normal(0, 20, 180)
+               for _ in range(50)]             # 50 Lumen-like daily series
+Xs, ys = zip(*(make_windows(s) for s in series_bank))
+X = np.concatenate(Xs); y = np.concatenate(ys)
+print("global training set:", X.shape, "-&gt;", y.shape)   # (~many, 28) -&gt; (~many, 14)</div>
+
+    <div class="callout example">
+      <span class="ex-pill">Real world</span>
+      <p><strong>This is where leakage sneaks back in.</strong> Every window must respect time: X is strictly before y, and when you split for evaluation you split by <em>date</em>, not by shuffling windows. A shuffled window split leaks the future exactly like a shuffled row split (b1) - just harder to spot.</p>
+    </div>
+  </section>
+
+  <!-- ============ DEMO 2 ============ -->
+  <section class="section" id="demo-2">
+    <div class="section-kicker">
+      <span class="klabel">Demo 2 of 2 · API sketch</span>
+      <h2>The shape of a deep fit: an N-BEATS call in Darts <span class="tag demo">★ 8 min · API sketch only</span></h2>
+    </div>
+    <p class="lede">This is the <em>shape</em> of a deep-model fit, so the API is not a mystery when you meet it. It will not run in this notebook as-is - it needs the library installed, enough data, and compute (ideally a GPU). Read it as annotated pseudocode for the real thing.</p>
+
+    <div class="steps">
+      <div class="step"><p>Wrap the Lumen series in the library's <code>TimeSeries</code> object and split it by time.</p></div>
+      <div class="step"><p>Instantiate a model with a past window (<code>input_chunk_length</code>) and a multi-horizon output (<code>output_chunk_length</code>).</p></div>
+      <div class="step"><p><code>.fit</code> then <code>.predict</code> - then, crucially, compare against the seasonal-naive baseline from b1.</p></div>
+    </div>
+
+    <div class="prompt-box good"><span class="label">★ API sketch (Python) - needs the library + data + compute; not run here</span># pip install darts       # (or u8darts) - NOT run in this notebook
+# This is the SHAPE of a deep fit on the Lumen series, nothing more.
+from darts import TimeSeries
+from darts.models import NBEATSModel
+
+ts = TimeSeries.from_series(s)                  # the Lumen daily series from b1
+train_ts, test_ts = ts[:-H], ts[-H:]            # split by TIME, never shuffle
+
+model = NBEATSModel(input_chunk_length=28,      # past window fed in
+                    output_chunk_length=H,      # multi-horizon output
+                    n_epochs=50)                # needs real compute + data
+model.fit(train_ts)                             # training: GPU/CPU time here
+forecast = model.predict(H)                     # H-step forecast
+
+# the ONLY verdict that matters: did it beat seasonal-naive on a backtest (b8)?
+print(forecast.values().ravel())</div>
+
+    <div class="callout tip">
+      <strong>Complexity has to earn it</strong>
+      A DeepAR, N-BEATS, or TFT that cannot beat your ETS or seasonal-naive on a rolling-origin backtest is not a forecaster - it is a liability: slower, harder to explain, more ways to break in production. Next session gives you the honest scoreboard to make that call.
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Try it yourself - this week <span class="tag exercise">◐ 30-45 min total</span></h2>
+    </div>
+    <ul>
+      <li>Build the sliding-window dataset (Demo 1) on your own daily series. Confirm every X window sits strictly before its y target - print a few index ranges to prove it.</li>
+      <li>Write one paragraph: does your problem have <em>many related series</em>, long horizons, or rich known-future inputs? If not, say honestly why a deep model is probably overkill.</li>
+      <li>Skim one paper abstract - DeepAR (arXiv:1704.04110), N-BEATS (arXiv:1905.10437), or TFT (arXiv:1912.09363) - and note the one problem it was built to solve.</li>
+      <li>Optional: install Darts and run the N-BEATS sketch on a longer synthetic series, then compare its holdout MAPE to your seasonal-naive baseline from b1.</li>
+    </ul>
+  </section>
+
+  <!-- ============ SOURCES ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Source material</span>
+      <h2>Sources covered (cited)</h2>
+    </div>
+    <p class="lede">A survey taught from the primary papers. Re-verify before relying on any library API - this area moves fast. This session covers:</p>
+    <div class="covered">
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Salinas et al. (2020), DeepAR - Int. J. Forecasting 36(3):1181-1191; arXiv:1704.04110</span><span class="note">Part 1-2 · global, probabilistic, autoregressive RNN</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">Oreshkin et al. (2020), N-BEATS - ICLR 2020; arXiv:1905.10437</span><span class="note">Part 2 + Demo 2 · deep residual basis expansion, interpretable</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">Lim et al. (2021), Temporal Fusion Transformer - Int. J. Forecasting 37(4):1748-1764; arXiv:1912.09363</span><span class="note">Part 2 · attention over past + known-future, multi-horizon</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">M-competitions (Makridakis, M4/M5)</span><span class="note">Framing · simple methods are hard to beat on a single series</span></div>
+    </div>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions before you go 🎯 <span class="tag exercise">◐ 90 seconds</span></h2>
+    </div>
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">1 · What is the main advantage of a global deep model?</p>
+      <button class="qopt" type="button">A · It is always more accurate than ARIMA</button>
+      <button class="qopt" type="button">B · One model trained across many related series, so short and new series borrow strength</button>
+      <button class="qopt" type="button">C · It removes the need for a train/test split</button>
+      <p class="qwhy">Global models learn shared patterns across a whole panel of series. That is their edge - not raw accuracy on one short line, where classical methods usually win.</p>
+    </div>
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">2 · Which model is built to use known-future covariates with attention, multi-horizon?</p>
+      <button class="qopt" type="button">A · DeepAR</button>
+      <button class="qopt" type="button">B · N-BEATS</button>
+      <button class="qopt" type="button">C · Temporal Fusion Transformer (TFT)</button>
+      <p class="qwhy">TFT (Lim et al. 2021) applies attention over past inputs plus known-future covariates and forecasts multiple horizons at once, with built-in interpretability.</p>
+    </div>
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">3 · When is a deep model probably the wrong tool?</p>
+      <button class="qopt" type="button">A · One short single series where a tuned ETS/ARIMA already beats the baseline</button>
+      <button class="qopt" type="button">B · Thousands of related SKU series with known-future promotions</button>
+      <button class="qopt" type="button">C · A long horizon with many exogenous inputs</button>
+      <p class="qwhy">The M-competitions are blunt: on a single short series, complexity rarely pays. Deep earns its place with many related series, long horizons, and rich inputs.</p>
+    </div>
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Builder session 7 cheat sheet <span>· pin this</span></h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>Survey, not a build</b><span>we map deep models + cite the papers; sketch code shows how they are fed/called, nothing trained.</span></div>
+      <div class="cheat-item"><b>Why deep</b><span>many related series, long horizons, exogenous inputs, probabilistic (quantile) output - a global model.</span></div>
+      <div class="cheat-item"><b>DeepAR</b><span>autoregressive RNN, trained globally, predicts a distribution - the at-scale probabilistic reference.</span></div>
+      <div class="cheat-item"><b>N-BEATS</b><span>pure deep residual basis expansion; interpretable trend/seasonality blocks; fast, no RNN/attention.</span></div>
+      <div class="cheat-item"><b>TFT</b><span>attention over past + known-future inputs, multi-horizon, interpretable.</span></div>
+      <div class="cheat-item"><b>Tooling</b><span>GluonTS, PyTorch-Forecasting, Darts - never hand-code these for a project.</span></div>
+      <div class="cheat-item"><b>M-competition caution</b><span>on one short series, deep often loses to good ETS/ARIMA. Beat the baseline on a backtest or drop it.</span></div>
+      <div class="cheat-item"><b>Next session</b><span>b8 - rolling-origin backtesting + MAPE/RMSE/MASE + interval coverage, the honest scoreboard.</span></div>
+    </div>
+  </section>
+
+  <footer class="pagefoot">
+    <span>Builder session 7 of 10 · learn-timeseries-forecasting-with-phoebe · by Phoebe Fu &nbsp;·&nbsp; 📚 <a href="https://phoebefu6.github.io/learn-with-phoebe/">Learn with Phoebe ↗</a></span>
+    <span><a href="../index.html">← All sessions</a> &nbsp;·&nbsp; <a href="b8-backtesting-metrics.html">Next: Backtesting &amp; metrics →</a></span>
+  </footer>
+
+</main>
+
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leader session 4 · The team &amp; the pipeline (R&amp;R) - learn timeseries forecasting with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-timeseries-forecasting-with-phoebe</a> / Leader session 4 of 6</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn Timeseries Forecasting with Phoebe · Leader track · Session 4 of 6</div>
+    <h1>The team &amp; the pipeline: <span class="accent">who does what (R&amp;R)</span></h1>
+    <p class="sub">A forecast is not a model - it is a relay. History gets profiled, a model gets built and backtested, the forecast gets served, the number gets surfaced where a decision is made, and the whole thing gets monitored so it stays honest. Each handoff carries one artifact. This session maps the five roles and their handoffs in plain English - the same relay your builder track runs in code - so you can staff it, spot the missing runner, and know who owns what when a forecast goes wrong.</p>
+    <div class="chip-row">
+      <span class="chip level">🟡 Leader track</span>
+      <span class="chip audience">Leaders: PM · biz · product</span>
+      <span class="chip audience">No code · concepts + decisions</span>
+      <span class="chip time">Session 4 of 6</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Welcome</span>
+      <span class="a2" style="flex:5">3-24 · The relay + its handoffs</span>
+      <span class="a3" style="flex:4">24-40 · Who owns what (RACI)</span>
+      <span class="a4" style="flex:1">40-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>A forecast is a relay, not a hero</h2>
+    </div>
+    <p class="lede">The most common way forecasting fails in an organisation is not a bad model - it is a broken handoff. The analyst never ships a baseline, so nobody knows what "good" is. The model works in a notebook but no one productionises it. The forecast is beautiful but never reaches the planning tool. Or nobody watches it drift. Treat forecasting as a relay of five roles, each passing one clear artifact, and you can see exactly where yours is dropping the baton.</p>
+    <div class="legend">
+      <span class="pill solid">Live - presented in session</span>
+      <span class="pill light">Self-study - read after class</span>
+      <span class="pill inkpill">Sources covered (cited)</span>
+    </div>
+    <div class="callout win">
+      <strong>★ What you walk out with today</strong>
+      The five roles of a forecasting pipeline and the single artifact each one hands off, a RACI-style grid of who is responsible for what, the mapping from each role to the builder-track sessions that do the work in code, and a way to audit your own org for the missing runner.
+    </div>
+  </section>
+
+  <!-- ============ PART 1: THE RELAY ============ -->
+  <section class="section" id="relay">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers industry practice</span>
+      <h2>The relay and its handoffs <span class="tag concept">10 min live</span></h2>
+    </div>
+    <p class="lede">Read it left to right. Each box is a role; the light box beneath is the one artifact it hands to the next runner. If an artifact is missing, the relay stalls there - which is exactly where to look when a forecast is not landing.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 214" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A five-stage forecasting relay: analyst hands off a baseline and plots, data scientist a backtested model, ML engineer a forecast API, engineering a dashboard, and monitoring error alerts">
+        <style>
+          .a4pTitle { font: 700 13px Inter, sans-serif; fill: #0F172A; }
+          .a4pW { font: 700 12px Inter, sans-serif; fill: #FFFFFF; }
+          .a4pI { font: 700 12px Inter, sans-serif; fill: #0F172A; }
+          .a4pA { font: 600 11px Inter, sans-serif; fill: #14532D; }
+          .a4pN { font: 600 13px Inter, sans-serif; fill: #14532D; }
+        </style>
+        <text class="a4pTitle" x="16" y="26">The forecasting relay - each role hands off one artifact</text>
+        <!-- role boxes -->
+        <rect x="16" y="44" width="150" height="58" rx="8" fill="#334155"/>
+        <text class="a4pW" x="91" y="70" text-anchor="middle">Data</text>
+        <text class="a4pW" x="91" y="88" text-anchor="middle">analyst</text>
+        <rect x="190" y="44" width="150" height="58" rx="8" fill="#16A34A"/>
+        <text class="a4pW" x="265" y="70" text-anchor="middle">Data</text>
+        <text class="a4pW" x="265" y="88" text-anchor="middle">scientist</text>
+        <rect x="364" y="44" width="150" height="58" rx="8" fill="#14532D"/>
+        <text class="a4pW" x="439" y="70" text-anchor="middle">ML eng /</text>
+        <text class="a4pW" x="439" y="88" text-anchor="middle">DevOps</text>
+        <rect x="538" y="44" width="150" height="58" rx="8" fill="#4ADE80"/>
+        <text class="a4pI" x="613" y="70" text-anchor="middle">Engineering</text>
+        <text class="a4pI" x="613" y="88" text-anchor="middle">/ product</text>
+        <rect x="712" y="44" width="150" height="58" rx="8" fill="#64748B"/>
+        <text class="a4pW" x="787" y="79" text-anchor="middle">Monitoring</text>
+        <!-- arrows between roles -->
+        <line x1="168" y1="73" x2="186" y2="73" stroke="#CBD5E1" stroke-width="2"/><polygon points="190,73 182,68 182,78" fill="#CBD5E1"/>
+        <line x1="342" y1="73" x2="360" y2="73" stroke="#CBD5E1" stroke-width="2"/><polygon points="364,73 356,68 356,78" fill="#CBD5E1"/>
+        <line x1="516" y1="73" x2="534" y2="73" stroke="#CBD5E1" stroke-width="2"/><polygon points="538,73 530,68 530,78" fill="#CBD5E1"/>
+        <line x1="690" y1="73" x2="708" y2="73" stroke="#CBD5E1" stroke-width="2"/><polygon points="712,73 704,68 704,78" fill="#CBD5E1"/>
+        <!-- connector ticks -->
+        <line x1="91" y1="102" x2="91" y2="120" stroke="#CBD5E1" stroke-width="2"/>
+        <line x1="265" y1="102" x2="265" y2="120" stroke="#CBD5E1" stroke-width="2"/>
+        <line x1="439" y1="102" x2="439" y2="120" stroke="#CBD5E1" stroke-width="2"/>
+        <line x1="613" y1="102" x2="613" y2="120" stroke="#CBD5E1" stroke-width="2"/>
+        <line x1="787" y1="102" x2="787" y2="120" stroke="#CBD5E1" stroke-width="2"/>
+        <!-- artifact boxes -->
+        <rect x="16" y="120" width="150" height="40" rx="8" fill="#F0FDF4" stroke="#16A34A"/>
+        <text class="a4pA" x="91" y="145" text-anchor="middle">baseline + plots</text>
+        <rect x="190" y="120" width="150" height="40" rx="8" fill="#F0FDF4" stroke="#16A34A"/>
+        <text class="a4pA" x="265" y="145" text-anchor="middle">backtested model</text>
+        <rect x="364" y="120" width="150" height="40" rx="8" fill="#F0FDF4" stroke="#16A34A"/>
+        <text class="a4pA" x="439" y="145" text-anchor="middle">forecast API</text>
+        <rect x="538" y="120" width="150" height="40" rx="8" fill="#F0FDF4" stroke="#16A34A"/>
+        <text class="a4pA" x="613" y="145" text-anchor="middle">the dashboard</text>
+        <rect x="712" y="120" width="150" height="40" rx="8" fill="#F0FDF4" stroke="#16A34A"/>
+        <text class="a4pA" x="787" y="145" text-anchor="middle">error alerts</text>
+        <!-- bottom note -->
+        <rect x="16" y="186" width="14" height="14" rx="3" fill="#16A34A"/>
+        <text class="a4pN" x="38" y="198">A missing artifact is a stalled relay - that is where a forecast quietly dies.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - five roles, five handoffs</figcaption>
+    </figure>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>The first three runners - profile, model, serve<span class="mini">4 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <ul>
+          <li><strong>Data analyst - profiles the history.</strong> Plots the series, decomposes it into trend and seasonality, spots outliers, and ships the baseline. The handoff is <em>a baseline plus the plots that explain the series</em>. Maps to builder sessions <strong>b1-b2</strong>.</li>
+          <li><strong>Data scientist - models and backtests.</strong> Climbs the method ladder (ETS, ARIMA, Prophet, ML), then selects the winner on a backtest against the baseline. The handoff is <em>a backtested, chosen model with its accuracy numbers</em>. Maps to <strong>b3-b8</strong>.</li>
+          <li><strong>ML engineer / DevOps - productionises.</strong> Turns the notebook model into something that runs on a schedule: retrain cadence, batch scoring, and the forecast API. The handoff is <em>a served forecast other systems can call</em>. Maps to <strong>b9</strong>.</li>
+        </ul>
+        <div class="callout tip">
+          <strong>The baseline is the first artifact for a reason</strong>
+          If the analyst never ships the baseline, the whole relay loses its yardstick. Every later role needs "the number to beat" to know whether their work is actually helping.
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The last two runners - surface, and monitor<span class="mini">4 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <ul>
+          <li><strong>Engineering / product - surfaces the forecast.</strong> A forecast nobody sees changes nothing. This role puts the number where the decision happens: a dashboard, or the field inside the planning or inventory tool. The handoff is <em>the forecast visible at the point of decision</em>. Maps to <strong>b9</strong>.</li>
+          <li><strong>Everyone, led by DS / analytics - monitors.</strong> Once live, the forecast is tracked against what actually happened. Errors are logged, drift is watched, and a rule decides when to retrain. The handoff is <em>error tracking and alerts that close the loop</em>. Maps to <strong>b10</strong>.</li>
+        </ul>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p><strong>The two ends fail most often.</strong> Teams over-invest in the middle (the model) and under-invest in the ends - shipping without a baseline, or launching with no monitoring. A model that is never watched will drift into being wrong, silently, right when the business trusts it most.</p>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2: RACI ============ -->
+  <section class="section" id="raci">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · who owns what</span>
+      <h2>The RACI grid <span class="tag concept">6 min live</span></h2>
+    </div>
+    <p class="lede">Same five tasks, now as ownership. <strong>A</strong> = accountable (the one name on the hook), <strong>R</strong> = also does the work, <strong>C</strong> = consulted. Notice the two lead roles: the data scientist owns the modelling and the closed loop; monitoring is a shared job the whole team runs.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 322" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A RACI grid: rows are the five pipeline tasks, columns are the roles, cells marked A accountable, R responsible, or C consulted">
+        <style>
+          .a4rHrole { font: 700 11px Inter, sans-serif; fill: #0F172A; }
+          .a4rTask { font: 600 12px Inter, sans-serif; fill: #0F172A; }
+          .a4rW { font: 700 13px Inter, sans-serif; fill: #FFFFFF; }
+          .a4rI { font: 700 13px Inter, sans-serif; fill: #14532D; }
+          .a4rL { font: 600 12px Inter, sans-serif; fill: #334155; }
+        </style>
+        <!-- column headers -->
+        <text class="a4rHrole" x="280" y="36" text-anchor="middle">Analyst</text>
+        <text class="a4rHrole" x="408" y="36" text-anchor="middle">Data scientist</text>
+        <text class="a4rHrole" x="536" y="36" text-anchor="middle">ML eng</text>
+        <text class="a4rHrole" x="664" y="36" text-anchor="middle">Eng / product</text>
+        <text class="a4rHrole" x="792" y="36" text-anchor="middle">Everyone</text>
+        <line x1="16" y1="44" x2="864" y2="44" stroke="#E2E8F0" stroke-width="1.5"/>
+        <!-- row 1: profile history -->
+        <text class="a4rTask" x="16" y="74">Profile history</text>
+        <rect x="248" y="54" width="64" height="34" rx="6" fill="#14532D"/><text class="a4rW" x="280" y="76" text-anchor="middle">A</text>
+        <rect x="376" y="54" width="64" height="34" rx="6" fill="#86EFAC"/><text class="a4rI" x="408" y="76" text-anchor="middle">C</text>
+        <!-- row 2: model + backtest -->
+        <text class="a4rTask" x="16" y="116">Model + backtest</text>
+        <rect x="248" y="96" width="64" height="34" rx="6" fill="#86EFAC"/><text class="a4rI" x="280" y="118" text-anchor="middle">C</text>
+        <rect x="376" y="96" width="64" height="34" rx="6" fill="#14532D"/><text class="a4rW" x="408" y="118" text-anchor="middle">A</text>
+        <!-- row 3: serve the forecast -->
+        <text class="a4rTask" x="16" y="158">Serve the forecast</text>
+        <rect x="376" y="138" width="64" height="34" rx="6" fill="#86EFAC"/><text class="a4rI" x="408" y="160" text-anchor="middle">C</text>
+        <rect x="504" y="138" width="64" height="34" rx="6" fill="#14532D"/><text class="a4rW" x="536" y="160" text-anchor="middle">A</text>
+        <rect x="632" y="138" width="64" height="34" rx="6" fill="#86EFAC"/><text class="a4rI" x="664" y="160" text-anchor="middle">C</text>
+        <!-- row 4: surface the number -->
+        <text class="a4rTask" x="16" y="200">Surface the number</text>
+        <rect x="376" y="180" width="64" height="34" rx="6" fill="#86EFAC"/><text class="a4rI" x="408" y="202" text-anchor="middle">C</text>
+        <rect x="632" y="180" width="64" height="34" rx="6" fill="#14532D"/><text class="a4rW" x="664" y="202" text-anchor="middle">A</text>
+        <!-- row 5: monitor + retrain -->
+        <text class="a4rTask" x="16" y="242">Monitor + retrain</text>
+        <rect x="248" y="222" width="64" height="34" rx="6" fill="#16A34A"/><text class="a4rW" x="280" y="244" text-anchor="middle">R</text>
+        <rect x="376" y="222" width="64" height="34" rx="6" fill="#14532D"/><text class="a4rW" x="408" y="244" text-anchor="middle">A</text>
+        <rect x="504" y="222" width="64" height="34" rx="6" fill="#86EFAC"/><text class="a4rI" x="536" y="244" text-anchor="middle">C</text>
+        <rect x="632" y="222" width="64" height="34" rx="6" fill="#86EFAC"/><text class="a4rI" x="664" y="244" text-anchor="middle">C</text>
+        <rect x="760" y="222" width="64" height="34" rx="6" fill="#16A34A"/><text class="a4rW" x="792" y="244" text-anchor="middle">R</text>
+        <!-- legend -->
+        <rect x="16" y="288" width="18" height="18" rx="4" fill="#14532D"/><text class="a4rL" x="40" y="301">A · accountable</text>
+        <rect x="200" y="288" width="18" height="18" rx="4" fill="#16A34A"/><text class="a4rL" x="224" y="301">R · does the work</text>
+        <rect x="400" y="288" width="18" height="18" rx="4" fill="#86EFAC"/><text class="a4rL" x="424" y="301">C · consulted</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - accountable, responsible, consulted across the five tasks</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Small teams wear several hats<span class="mini">2 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>These are five <em>roles</em>, not necessarily five <em>people</em>. In a small org one analyst-plus-DS may cover the first two, an engineer the next two, and monitoring is a shared habit.</p>
+        <ul>
+          <li><strong>Do not skip a role by skipping a person.</strong> If nobody owns monitoring, monitoring does not happen - the task still needs an accountable name.</li>
+          <li><strong>The accountable name matters most.</strong> One clear "A" per task prevents the "I thought you had it" failure.</li>
+          <li><strong>Buy-vs-build shifts the middle.</strong> A vendor forecast product can cover serving, but you still own profiling, the baseline, surfacing, and monitoring.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ WALK-THROUGH ============ -->
+  <section class="section" id="walkthrough">
+    <div class="section-kicker">
+      <span class="klabel">Walk-through · a thought exercise</span>
+      <h2>Find the missing runner <span class="tag demo">★ 6 min · think it through</span></h2>
+    </div>
+    <p class="lede">A forecast in your org "isn't working." Walk the relay to locate the break instead of blaming the model.</p>
+
+    <div class="steps">
+      <div class="step"><p>Ask for the baseline. If no one can tell you the seasonal-naive number the model beats, the analyst handoff is missing - start there.</p></div>
+      <div class="step"><p>Ask where the forecast lives. If it only exists in a notebook, the ML-engineer handoff (the served forecast) never happened.</p></div>
+      <div class="step"><p>Ask who sees it. If the number never reaches the planning tool or a dashboard, the engineering/product handoff is the break.</p></div>
+      <div class="step"><p>Ask who watches it. If nobody tracks forecast error over time, the model may already be drifting and no one knows. That is the monitoring gap.</p></div>
+    </div>
+
+    <div class="callout tip">
+      <strong>The pattern to remember</strong>
+      "The forecast is bad" is almost never a model problem alone. Nine times in ten it is a dropped handoff - a missing baseline, an unshipped model, an unseen number, or an unwatched drift. Name the runner, name the artifact, fix the relay.
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Try it yourself - this week <span class="tag exercise">◐ 20-30 min total</span></h2>
+    </div>
+    <ul>
+      <li>Take one live or planned forecast in your org and map it onto the five roles - profile, model, serve, surface, monitor.</li>
+      <li>Write the name (or "nobody") accountable for each of the five tasks.</li>
+      <li>Circle the gap: which handoff has no clear owner or no artifact today?</li>
+      <li>Write one sentence on how you would close that gap - hire, reassign, or a vendor for the middle.</li>
+      <li>Optional: check that a baseline number exists at all. If it does not, that is your first fix.</li>
+    </ul>
+  </section>
+
+  <!-- ============ SOURCES ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Source material</span>
+      <h2>Sources covered (cited)</h2>
+    </div>
+    <p class="lede">This session reflects standard forecasting-team practice, mapped onto the builder track that runs it in code. It covers:</p>
+    <div class="covered">
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Industry practice - the forecasting pipeline &amp; roles</span><span class="note">The relay · analyst → data scientist → ML eng/DevOps → engineering → monitoring, and the artifact each hands off</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">Forecasting: Principles and Practice, 3rd ed (Hyndman &amp; Athanasopoulos, FPP3)</span><span class="note">Supporting · the forecasting workflow and why the baseline anchors it</span></div>
+    </div>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions before you go 🎯 <span class="tag exercise">◐ 90 seconds</span></h2>
+    </div>
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">1 · What artifact does the data analyst hand off?</p>
+      <button class="qopt" type="button">A · The production API</button>
+      <button class="qopt" type="button">B · The profiled history - plots plus the baseline to beat</button>
+      <button class="qopt" type="button">C · The monitoring dashboard</button>
+      <p class="qwhy">The analyst profiles the series (trend, seasonality, outliers) and ships the baseline. That baseline is the yardstick every later role needs.</p>
+    </div>
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">2 · Who is accountable for modelling and selecting on a backtest?</p>
+      <button class="qopt" type="button">A · The ML engineer</button>
+      <button class="qopt" type="button">B · Engineering / product</button>
+      <button class="qopt" type="button">C · The data scientist</button>
+      <p class="qwhy">The data scientist climbs the method ladder and picks the winner on a backtest against the baseline - the "A" on the model + backtest row.</p>
+    </div>
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">3 · A forecast "isn't working." What is the leader's first move?</p>
+      <button class="qopt" type="button">A · Walk the relay to find the dropped handoff - missing baseline, unshipped model, unseen number, or unwatched drift</button>
+      <button class="qopt" type="button">B · Immediately buy a deep-learning model</button>
+      <button class="qopt" type="button">C · Fire the data scientist</button>
+      <p class="qwhy">Nine times in ten the problem is a broken handoff, not the model. Name the runner and the missing artifact, then fix that link.</p>
+    </div>
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Leader session 4 cheat sheet <span>· pin this</span></h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>Forecasting is a relay</b><span>five roles, five handoffs. A dropped baton, not a bad model, is the usual failure.</span></div>
+      <div class="cheat-item"><b>Analyst → baseline + plots</b><span>profiles history, decomposes, ships the number to beat. Builder b1-b2.</span></div>
+      <div class="cheat-item"><b>Data scientist → backtested model</b><span>climbs the ladder, selects on a backtest. Builder b3-b8.</span></div>
+      <div class="cheat-item"><b>ML eng / DevOps → forecast API</b><span>retrain cadence, batch serving, the served forecast. Builder b9.</span></div>
+      <div class="cheat-item"><b>Engineering / product → dashboard</b><span>puts the number at the point of decision. Builder b9.</span></div>
+      <div class="cheat-item"><b>Everyone (led by DS) → monitor</b><span>error tracking, drift, when to retrain - the closed loop. Builder b10.</span></div>
+      <div class="cheat-item"><b>One accountable name</b><span>each task needs exactly one "A" or "I thought you had it" happens.</span></div>
+      <div class="cheat-item"><b>Next session</b><span>a5 - measuring a forecast: MAPE, RMSE, MASE, backtesting, and prediction intervals.</span></div>
+    </div>
+  </section>
+
+  <footer class="pagefoot">
+    <span>Leader session 4 of 6 · learn-timeseries-forecasting-with-phoebe · by Phoebe Fu &nbsp;·&nbsp; 📚 <a href="https://phoebefu6.github.io/learn-with-phoebe/">Learn with Phoebe ↗</a></span>
+    <span><a href="a3-methods-no-math.html">← Previous: The methods, without math</a> &nbsp;·&nbsp; <a href="a5-measuring-forecasts.html">Next: Measuring a forecast →</a></span>
+  </footer>
+
+</main>
+
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

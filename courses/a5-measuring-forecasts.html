@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leader session 5 · Measuring a forecast - learn timeseries forecasting with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-timeseries-forecasting-with-phoebe</a> / Leader session 5 of 6</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn Timeseries Forecasting with Phoebe · Leader track · Session 5 of 6</div>
+    <h1>Measuring a forecast: <span class="accent">how to tell a good one from a lucky one</span></h1>
+    <p class="sub">Anyone can draw a line into the future. The question a leader has to ask is: how do we know it is any good? This session gives you the four checks that separate a real forecast from a confident guess - a plain-English error number, a fair test on data the model never saw, the one baseline every forecast must beat, and the honesty of a prediction interval. No math to memorise, just the questions to ask your team.</p>
+    <div class="chip-row">
+      <span class="chip level">🟠 Leader track</span>
+      <span class="chip audience">Leaders: PM · biz · product</span>
+      <span class="chip audience">No code · concepts + decisions</span>
+      <span class="chip time">Session 5 of 6</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Recap</span>
+      <span class="a2" style="flex:4">3-20 · The error metrics</span>
+      <span class="a3" style="flex:4">20-38 · Backtest &amp; beat naive</span>
+      <span class="a4" style="flex:2">38-45 · Intervals &amp; Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>Why measurement is a leadership job</h2>
+    </div>
+    <p class="lede">A forecast that is never scored is just an opinion in a chart. The most expensive forecasting mistakes are not bad models - they are good-looking numbers nobody checked against reality. Your job is not to run the metric; it is to insist the metric exists, ask what it says, and refuse the false comfort of a single line with no error bar. Four questions do most of the work: <strong>how wrong is it, on average? was it tested on the future? does it beat the obvious baseline? and does it admit its own uncertainty?</strong></p>
+    <div class="legend">
+      <span class="pill solid">Live - discussed in session</span>
+      <span class="pill light">Self-study - read after class</span>
+      <span class="pill inkpill">Sources covered (cited)</span>
+    </div>
+    <div class="callout win">
+      <strong>★ What you walk out with today</strong>
+      A working feel for the three error metrics (MAPE, RMSE, MASE), why a forecast must be tested on data it never saw (backtesting), the one-line question that catches most weak forecasts ("does it beat naive?"), and why a point forecast without a prediction interval is false confidence.
+    </div>
+  </section>
+
+  <!-- ============ PART 1: ERROR METRICS ============ -->
+  <section class="section" id="metrics">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers FPP3 (evaluation)</span>
+      <h2>How wrong is it? Three ways to say it <span class="tag concept">8 min live</span></h2>
+    </div>
+    <p class="lede">Every forecast has error: the gap between what it predicted and what actually happened. There is no single "the accuracy" - there are a few standard ways to summarise those gaps, and each answers a slightly different question. You do not need the formulas. You need to know which number your team is quoting, and what it hides.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 330" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A forecast line and the actual line diverge over the test period; the vertical gaps between them are the errors that become MAPE and RMSE">
+        <style>
+          .a5mT { font: 700 13px Inter, sans-serif; fill: #0F172A; }
+          .a5mX { font: 400 12px Inter, sans-serif; fill: #64748B; }
+          .a5mN { font: 600 13px Inter, sans-serif; fill: #14532D; }
+          .a5mH { font: 700 12px Inter, sans-serif; fill: #FFFFFF; }
+          .a5mR { font: 700 11px Inter, sans-serif; fill: #991B1B; }
+        </style>
+        <text class="a5mT" x="24" y="26">Forecast vs actual - the gaps are the errors</text>
+        <!-- axis -->
+        <line x1="60" y1="250" x2="852" y2="250" stroke="#CBD5E1" stroke-width="1.5"/>
+        <line x1="60" y1="48" x2="60" y2="250" stroke="#CBD5E1" stroke-width="1.5"/>
+        <!-- now divider -->
+        <line x1="440" y1="48" x2="440" y2="250" stroke="#94A3B8" stroke-width="1.5" stroke-dasharray="4 4"/>
+        <text class="a5mX" x="360" y="44">history</text>
+        <text class="a5mX" x="452" y="44">the future we test on</text>
+        <!-- history (slate) -->
+        <polyline points="60,180 102,170 144,185 186,160 228,175 270,150 312,166 354,146 396,158 440,150" fill="none" stroke="#334155" stroke-width="2.5"/>
+        <!-- actual over test (muted, what really happened) -->
+        <polyline points="440,150 490,124 540,140 590,112 640,132 690,104 740,124 790,100 840,120" fill="none" stroke="#64748B" stroke-width="2.5" stroke-dasharray="5 4"/>
+        <!-- forecast over test (green) -->
+        <polyline points="440,150 490,148 540,150 590,148 640,150 690,148 740,150 790,148 840,150" fill="none" stroke="#16A34A" stroke-width="2.5"/>
+        <!-- gap lines -->
+        <line x1="490" y1="124" x2="490" y2="148" stroke="#FCA5A5" stroke-width="3"/>
+        <line x1="590" y1="112" x2="590" y2="148" stroke="#FCA5A5" stroke-width="3"/>
+        <line x1="690" y1="104" x2="690" y2="148" stroke="#FCA5A5" stroke-width="3"/>
+        <line x1="790" y1="100" x2="790" y2="148" stroke="#FCA5A5" stroke-width="3"/>
+        <text class="a5mR" x="700" y="96">big miss</text>
+        <!-- legend -->
+        <rect x="60" y="272" width="14" height="14" rx="3" fill="#334155"/><text class="a5mX" x="80" y="284">history</text>
+        <rect x="150" y="272" width="14" height="14" rx="3" fill="#64748B"/><text class="a5mX" x="170" y="284">actual</text>
+        <rect x="232" y="272" width="14" height="14" rx="3" fill="#16A34A"/><text class="a5mX" x="252" y="284">forecast</text>
+        <rect x="322" y="272" width="14" height="14" rx="3" fill="#FCA5A5"/><text class="a5mX" x="342" y="284">the error (gap)</text>
+        <rect x="24" y="304" width="14" height="14" rx="3" fill="#16A34A"/>
+        <text class="a5mN" x="46" y="316">These gaps become MAPE and RMSE. RMSE punishes the big miss hardest; MAPE turns each gap into a percentage.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the vertical gaps between actual and forecast are the error</figcaption>
+    </figure>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>MAPE, RMSE, MASE - what each one is really telling you<span class="mini">4 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Three names come up in almost every forecasting review. Here is the plain-English version of each - and the trap in each.</p>
+        <ul>
+          <li><strong>MAPE (mean absolute percentage error)</strong> - the average gap expressed as a percentage. "We are off by about 8% on a typical day." Intuitive and unit-free, which is why executives love it. <em>The trap:</em> it explodes near zero. On a day with almost no sessions, being off by a handful looks like a 400% error, so MAPE lies on low-volume or spiky series.</li>
+          <li><strong>RMSE (root mean squared error)</strong> - the typical size of a miss, in the same unit as the data (sessions, dollars, units). <em>The trap:</em> it squares the gaps first, so one huge miss dominates the score. That is a feature when a big miss is what actually hurts you (a stockout, a blown capacity plan), and a bug when you only care about the everyday case.</li>
+          <li><strong>MASE (mean absolute scaled error)</strong> - the honest referee. It scores your forecast <em>relative to the naive baseline</em>. Below 1 means you beat naive; above 1 means you are worse than "just repeat last week". <em>Why leaders should ask for it:</em> it is the one number that answers "is the model earning its keep?" in a single glance.</li>
+        </ul>
+        <div class="callout tip">
+          <strong>Ask which metric, and why</strong>
+          There is no universally correct metric. The right one matches the decision: RMSE when a big miss is catastrophic, MAPE when everyone needs a percentage they can feel, MASE when you want to know if the model beats doing nothing clever. If your team quotes only one, ask what it hides.
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Why "8% error" means nothing without context<span class="mini">2 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>A percentage on its own is not good or bad. An 8% MAPE is excellent for volatile daily web traffic and embarrassing for stable monthly revenue. Three questions turn a bare number into a judgement:</p>
+        <ul>
+          <li><strong>Compared to what?</strong> 8% only means something next to the baseline's error (Part 2). If naive also scores 8%, your model added nothing.</li>
+          <li><strong>At what horizon?</strong> Error almost always grows the further out you forecast. A 3% next-day error and a 3% next-quarter error are very different achievements.</li>
+          <li><strong>On which days?</strong> An average hides the pattern. A model that is superb on weekdays and hopeless on promo days may need different handling, not a better single number.</li>
+        </ul>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p><strong>Lumen's dashboard quotes "6% MAPE" in green.</strong> The leader who asks the right questions learns that the seasonal-naive baseline also scores 6%, the number is measured one day ahead but the planning decision is 30 days out, and most of the error is concentrated on campaign launch days. The headline was true and almost useless. Measurement is only as honest as the questions around it.</p>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2: BACKTESTING ============ -->
+  <section class="section" id="backtest">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers FPP3 (time-series cross-validation), M-competitions</span>
+      <h2>Test it on the future it never saw <span class="tag concept">9 min live</span></h2>
+    </div>
+    <p class="lede">You cannot judge a forecast on the data it was trained on - that is like grading students on questions they already had the answers to. A model can memorise the past perfectly and still be useless tomorrow. The only fair test is to hide some of the future, forecast it, then reveal it and score. Do it once and luck can flatter or punish you. Do it many times, marching the window forward, and you get an honest average. This repeated test is called <strong>backtesting</strong>, or rolling-origin evaluation.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Rolling-origin backtest: the training window slides forward across four folds, each forecasting the next unseen window">
+        <style>
+          .a5bT { font: 700 13px Inter, sans-serif; fill: #0F172A; }
+          .a5bX { font: 400 12px Inter, sans-serif; fill: #64748B; }
+          .a5bN { font: 600 13px Inter, sans-serif; fill: #14532D; }
+          .a5bH { font: 700 12px Inter, sans-serif; fill: #FFFFFF; }
+          .a5bL { font: 700 12px Inter, sans-serif; fill: #334155; }
+        </style>
+        <text class="a5bT" x="24" y="26">Rolling origin - the window slides forward, one fair test per fold</text>
+        <text class="a5bL" x="96" y="66">train on the past · test on the next unseen window</text>
+        <!-- Fold 1 -->
+        <text class="a5bX" x="24" y="94">Fold 1</text>
+        <rect x="96" y="80" width="300" height="26" rx="6" fill="#334155"/><text class="a5bH" x="110" y="98">train</text>
+        <rect x="400" y="80" width="70" height="26" rx="6" fill="#16A34A"/><text class="a5bH" x="410" y="98">test</text>
+        <!-- Fold 2 -->
+        <text class="a5bX" x="24" y="134">Fold 2</text>
+        <rect x="96" y="120" width="370" height="26" rx="6" fill="#334155"/><text class="a5bH" x="110" y="138">train</text>
+        <rect x="470" y="120" width="70" height="26" rx="6" fill="#16A34A"/><text class="a5bH" x="480" y="138">test</text>
+        <!-- Fold 3 -->
+        <text class="a5bX" x="24" y="174">Fold 3</text>
+        <rect x="96" y="160" width="440" height="26" rx="6" fill="#334155"/><text class="a5bH" x="110" y="178">train</text>
+        <rect x="540" y="160" width="70" height="26" rx="6" fill="#16A34A"/><text class="a5bH" x="550" y="178">test</text>
+        <!-- Fold 4 -->
+        <text class="a5bX" x="24" y="214">Fold 4</text>
+        <rect x="96" y="200" width="510" height="26" rx="6" fill="#334155"/><text class="a5bH" x="110" y="218">train</text>
+        <rect x="610" y="200" width="70" height="26" rx="6" fill="#16A34A"/><text class="a5bH" x="620" y="218">test</text>
+        <text class="a5bX" x="694" y="98">→ score</text>
+        <text class="a5bX" x="694" y="138">→ score</text>
+        <text class="a5bX" x="694" y="178">→ score</text>
+        <text class="a5bX" x="694" y="218">→ score</text>
+        <rect x="24" y="256" width="14" height="14" rx="3" fill="#16A34A"/>
+        <text class="a5bN" x="46" y="268">Each fold trains only on its past and is scored on the next unseen window. Average the four scores for an honest number.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the training window slides forward, one fair test per fold</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Beat the naive baseline - the single most important check<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Before you celebrate any forecast, ask one question: <strong>does it beat naive?</strong> The naive forecast is "tomorrow equals today"; the seasonal-naive is "next Tuesday equals last Tuesday". These cost nothing and require no model - and they are shockingly hard to beat.</p>
+        <ul>
+          <li><strong>The baseline is the bar, not the enemy.</strong> If a complex model cannot beat seasonal-naive on a backtest, its complexity is not earning its place. Retire it, or keep the baseline.</li>
+          <li><strong>This is MASE in one sentence.</strong> MASE below 1 = you beat naive; above 1 = the naive line was better. It is the same check, made into a number.</li>
+          <li><strong>The baseline is also your safety net.</strong> When a fancy model breaks in production, seasonal-naive is the fallback that keeps the business running.</li>
+        </ul>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p><strong>The M-competitions taught the field humility.</strong> Across the largest public forecasting bake-offs (M4, 2018; M5, 2020), simple methods and combinations of them were repeatedly hard to beat, and elaborate models often lost to a well-chosen baseline. The leadership takeaway: demand that every model prove itself against naive on a backtest before it ships. Complexity must earn its keep.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>One holdout vs many folds - why repetition matters<span class="mini">2 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>A single test window can mislead. If the one month you held out happened to be calm, every model looks great; if it contained a spike, every model looks terrible. Neither tells you how the forecast behaves <em>on average</em>.</p>
+        <ul>
+          <li><strong>More folds, more trust.</strong> Scoring across many rolling windows averages out the luck of any single period.</li>
+          <li><strong>Match the test horizon to the decision.</strong> If you plan 14 days out, each fold should forecast 14 days out. Testing one day ahead and planning a month ahead is measuring the wrong thing.</li>
+          <li><strong>Never tune on the final test.</strong> Choosing a model by peeking at the very data you will report on is a form of cheating (leakage). We return to this in Session 6.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 3: PREDICTION INTERVALS ============ -->
+  <section class="section" id="intervals">
+    <div class="section-kicker">
+      <span class="klabel">Part 3 · covers FPP3 (prediction intervals)</span>
+      <h2>A point forecast alone is false confidence <span class="tag concept">6 min live</span></h2>
+    </div>
+    <p class="lede">"We expect 1,200 sessions next Tuesday" sounds precise, and that is exactly the problem. The future is a range, not a number. A responsible forecast reports a <strong>prediction interval</strong> - "1,200, and 80% likely to land between 1,050 and 1,350". The interval is not the model hedging; it is the model being honest about how much it does not know.</p>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>Coverage - the promise an interval has to keep<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>An 80% prediction interval makes a testable promise: over many forecasts, the truth should fall inside it about 80% of the time. That property is called <strong>coverage</strong>, and you can check it.</p>
+        <ul>
+          <li><strong>Too narrow (say 50% coverage)</strong> - the model is overconfident. Plans built on it will be blindsided far more often than expected.</li>
+          <li><strong>Too wide (say 99% coverage)</strong> - technically safe, but so vague it is useless for a decision. An interval from zero to infinity is always right and never helpful.</li>
+          <li><strong>Intervals widen with the horizon.</strong> Next week is fairly knowable; next quarter much less. If someone shows you a far-out forecast with a razor-thin band, be suspicious.</li>
+        </ul>
+        <div class="callout tip">
+          <strong>The question to ask</strong>
+          "What is the interval, and does it actually cover?" A team that can answer both is forecasting honestly. A single confident number with no band is a guess wearing a suit.
+        </div>
+      </div>
+    </details>
+
+    <div class="callout win">
+      <strong>The four checks, in one breath</strong>
+      How wrong is it (MAPE / RMSE / MASE)? Was it tested on the future (backtest)? Does it beat naive (MASE below 1)? Does it carry an interval that actually covers? A forecast that passes all four is worth planning on. One that skips any of them is an opinion.
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Try it yourself - this week <span class="tag exercise">◐ 20-30 min total</span></h2>
+    </div>
+    <ul>
+      <li>Pick one forecast your team or business actually relies on (traffic, demand, cash-flow, headcount).</li>
+      <li>Ask, and write down the answers: <strong>What is its MAPE (or RMSE)?</strong> If nobody knows, that is your finding.</li>
+      <li><strong>Does it beat the naive baseline?</strong> If it has never been compared to "repeat last week", ask for that comparison.</li>
+      <li><strong>Does it report a prediction interval?</strong> If it is a single number, ask what the range of likely outcomes is.</li>
+      <li>Write one sentence on the decision this forecast drives, and whether the current accuracy is good enough for that decision.</li>
+      <li>Optional: skim the evaluation chapter of FPP3 (Hyndman &amp; Athanasopoulos, otexts.com/fpp3) - the open textbook behind this track.</li>
+    </ul>
+  </section>
+
+  <!-- ============ SOURCES ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Source material</span>
+      <h2>Sources covered (cited)</h2>
+    </div>
+    <p class="lede">Taught from the forecasting canon and the published empirical evidence. This session covers:</p>
+    <div class="covered">
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Forecasting: Principles and Practice, 3rd ed (Hyndman &amp; Athanasopoulos, FPP3), otexts.com/fpp3</span><span class="note">evaluation, time-series cross-validation, error metrics, prediction intervals</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">M-competitions (Makridakis et al., M4 2018 / M5 2020)</span><span class="note">the empirical case for beating a simple baseline before shipping complexity</span></div>
+    </div>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions before you go 🎯 <span class="tag exercise">◐ 90 seconds</span></h2>
+    </div>
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">1 · Why can a forecast look great in review and still fail in production?</p>
+      <button class="qopt" type="button">A · It used too much data</button>
+      <button class="qopt" type="button">B · MAPE is always wrong</button>
+      <button class="qopt" type="button">C · It was scored on data it was trained on, not on the future it never saw</button>
+      <p class="qwhy">A model can memorise the past. The only fair test is on hidden future data - a backtest - ideally repeated across many rolling folds.</p>
+    </div>
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">2 · What does MASE below 1 tell a leader?</p>
+      <button class="qopt" type="button">A · The forecast is 100% accurate</button>
+      <button class="qopt" type="button">B · The model beat the naive baseline - its complexity is earning its keep</button>
+      <button class="qopt" type="button">C · The interval is too wide</button>
+      <p class="qwhy">MASE scores the forecast against naive. Below 1 beats naive; above 1 is worse than just repeating last week. It is the "does it earn its keep" number.</p>
+    </div>
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">3 · Why insist on a prediction interval, not just a single number?</p>
+      <button class="qopt" type="button">A · The future is a range; a bare point forecast is false confidence, and an 80% interval should cover the truth ~80% of the time</button>
+      <button class="qopt" type="button">B · Intervals make the chart look busier</button>
+      <button class="qopt" type="button">C · Intervals remove the need to backtest</button>
+      <p class="qwhy">A point forecast hides uncertainty. An interval states it, and its coverage is testable - too narrow means overconfident, too wide means useless.</p>
+    </div>
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Leader session 5 cheat sheet <span>· pin this</span></h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>MAPE</b><span>average error as a %. Intuitive, but breaks near zero - lies on low-volume, spiky series.</span></div>
+      <div class="cheat-item"><b>RMSE</b><span>typical miss, in the data's own unit. Punishes big misses hardest - right when a big miss hurts.</span></div>
+      <div class="cheat-item"><b>MASE</b><span>scored against naive. Below 1 beats naive, above 1 is worse. The "earns its keep" number.</span></div>
+      <div class="cheat-item"><b>Backtest</b><span>test on the future it never saw. One split is luck; roll the window forward and average.</span></div>
+      <div class="cheat-item"><b>Beat naive</b><span>the single most important check. If it can't beat "repeat last week", it doesn't ship.</span></div>
+      <div class="cheat-item"><b>Prediction interval</b><span>a range, not a point. A bare number is false confidence.</span></div>
+      <div class="cheat-item"><b>Coverage</b><span>an 80% interval should contain the truth ~80% of the time. Too narrow = overconfident.</span></div>
+      <div class="cheat-item"><b>Next session</b><span>a6 - strategy &amp; pitfalls, and when NOT to forecast at all.</span></div>
+    </div>
+  </section>
+
+  <footer class="pagefoot">
+    <span>Leader session 5 of 6 · learn-timeseries-forecasting-with-phoebe · by Phoebe Fu &nbsp;·&nbsp; 📚 <a href="https://phoebefu6.github.io/learn-with-phoebe/">Learn with Phoebe ↗</a></span>
+    <span><a href="a4-team-pipeline-rr.html">← Previous: The team &amp; the pipeline</a> &nbsp;·&nbsp; <a href="a6-strategy-pitfalls.html">Next: Strategy &amp; pitfalls →</a></span>
+  </footer>
+
+</main>
+
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

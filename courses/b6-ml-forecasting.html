@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Builder session 6 · ML forecasting - learn timeseries forecasting with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-timeseries-forecasting-with-phoebe</a> / Builder session 6 of 10</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn Timeseries Forecasting with Phoebe · Builder track · Session 6 of 10</div>
+    <h1>ML forecasting: <span class="accent">forecasting as supervised regression</span></h1>
+    <p class="sub">So far every method has been a dedicated time-series model. This session reframes the whole problem: turn the series into an ordinary table where the target is the future value and the features are lags, rolling stats, and calendar flags - then let a gradient-boosting regressor learn the mapping. It is the family that rose in the M5 competition, it scales to many related series with external drivers, and it lives or dies on careful feature engineering with zero leakage.</p>
+    <div class="chip-row">
+      <span class="chip level">🟠 Builder track</span>
+      <span class="chip audience">Practitioners: analysts · data scientists · engineers</span>
+      <span class="chip audience">Python 3.10+ · a notebook</span>
+      <span class="chip time">~45 min</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Recap</span>
+      <span class="a2" style="flex:4">3-18 · Series to a table</span>
+      <span class="a3" style="flex:5">18-42 · Build-along: features + boosting</span>
+      <span class="a4" style="flex:1">42-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>A different way to see the problem</h2>
+    </div>
+    <p class="lede">ETS (b3), ARIMA (b4), and Prophet (b5) are all purpose-built time-series models. The ML approach throws that framing out and asks: what if forecasting is just <strong>supervised regression</strong>? Build a table whose target column is tomorrow's value and whose feature columns describe what we knew up to today - yesterday's value, last week's same day, a 7-day average, the day of week. Fit any regressor to that table. Gradient-boosted trees (XGBoost, LightGBM, sklearn's <code>HistGradientBoostingRegressor</code>) are the workhorse here, and they are what carried the top of the M5 competition. The power is that this scales to hundreds of related series and lets you feed in external drivers; the price is that <em>you</em> engineer the features, and one leak sinks the whole thing.</p>
+    <div class="legend">
+      <span class="pill solid">Live - presented in session</span>
+      <span class="pill light">Self-study - read after class</span>
+      <span class="pill peach">★ Run it now (Python)</span>
+      <span class="pill inkpill">Sources covered (cited)</span>
+    </div>
+    <div class="callout win">
+      <strong>★ What you walk out with today</strong>
+      The Lumen series turned into a supervised feature frame - lag features, rolling statistics, and calendar flags - built so every feature is known at forecast time (no leakage), a fitted gradient-boosting regressor, a recursive multi-step forecast for the next H days scored against the b1 baseline, and a read on which features actually carry the prediction.
+    </div>
+  </section>
+
+  <!-- ============ PART 1: SERIES TO A TABLE ============ -->
+  <section class="section" id="table">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers sklearn / GBM forecasting</span>
+      <h2>Turn the series into a supervised table <span class="tag concept">6 min live</span></h2>
+    </div>
+    <p class="lede">A regressor needs rows of <strong>features -&gt; target</strong>. We build them by sliding a window along the series: for each day <em>t</em>, the target is the value at <em>t</em>, and the features summarise the days before it. Slide the window forward one day and you get the next row. Do this for the whole history and the time series becomes an ordinary table any regressor can learn.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A sliding window over past days plus calendar flags becomes one feature row that predicts the next day's value">
+        <style>
+          .b6sT { font: 700 13px Inter, sans-serif; fill: #0F172A; }
+          .b6sX { font: 400 12px Inter, sans-serif; fill: #64748B; }
+          .b6sN { font: 600 13px Inter, sans-serif; fill: #14532D; }
+          .b6sH { font: 700 12px Inter, sans-serif; fill: #FFFFFF; }
+          .b6sK { font: 700 11px Inter, sans-serif; fill: #0F172A; }
+        </style>
+        <text class="b6sT" x="24" y="26">A sliding window of the past becomes one feature row</text>
+        <!-- series dots -->
+        <text class="b6sX" x="24" y="66">series:</text>
+        <g fill="#334155">
+          <circle cx="96" cy="80" r="5"/><circle cx="146" cy="74" r="5"/><circle cx="196" cy="82" r="5"/>
+          <circle cx="246" cy="70" r="5"/><circle cx="296" cy="78" r="5"/><circle cx="346" cy="66" r="5"/>
+          <circle cx="396" cy="74" r="5"/>
+        </g>
+        <!-- target day (green) -->
+        <circle cx="446" cy="62" r="6" fill="#16A34A"/>
+        <!-- window bracket -->
+        <rect x="80" y="52" width="332" height="42" rx="8" fill="none" stroke="#16A34A" stroke-width="2" stroke-dasharray="5 4"/>
+        <text class="b6sK" x="150" y="112">window of past days (features)</text>
+        <text class="b6sN" x="424" y="112">predict -&gt;</text>
+        <!-- arrow down -->
+        <line x1="250" y1="122" x2="250" y2="150" stroke="#CBD5E1" stroke-width="2"/>
+        <polygon points="250,158 245,148 255,148" fill="#CBD5E1"/>
+        <!-- table header -->
+        <rect x="60" y="164" width="110" height="34" rx="6" fill="#334155"/><text class="b6sH" x="86" y="186">lag_1</text>
+        <rect x="174" y="164" width="110" height="34" rx="6" fill="#334155"/><text class="b6sH" x="200" y="186">lag_7</text>
+        <rect x="288" y="164" width="110" height="34" rx="6" fill="#334155"/><text class="b6sH" x="310" y="186">roll_7</text>
+        <rect x="402" y="164" width="110" height="34" rx="6" fill="#64748B"/><text class="b6sH" x="430" y="186">dow</text>
+        <rect x="516" y="164" width="150" height="34" rx="6" fill="#64748B"/><text class="b6sH" x="536" y="186">is_weekend</text>
+        <rect x="700" y="164" width="120" height="34" rx="6" fill="#16A34A"/><text class="b6sH" x="726" y="186">y (next)</text>
+        <!-- table row values -->
+        <rect x="60" y="202" width="110" height="34" rx="6" fill="#F0FDF4" stroke="#86EFAC"/><text class="b6sK" x="98" y="224">1046</text>
+        <rect x="174" y="202" width="110" height="34" rx="6" fill="#F0FDF4" stroke="#86EFAC"/><text class="b6sK" x="212" y="224">1002</text>
+        <rect x="288" y="202" width="110" height="34" rx="6" fill="#F0FDF4" stroke="#86EFAC"/><text class="b6sK" x="326" y="224">1031</text>
+        <rect x="402" y="202" width="110" height="34" rx="6" fill="#F1F5F9" stroke="#CBD5E1"/><text class="b6sK" x="450" y="224">5</text>
+        <rect x="516" y="202" width="150" height="34" rx="6" fill="#F1F5F9" stroke="#CBD5E1"/><text class="b6sK" x="586" y="224">1</text>
+        <rect x="700" y="202" width="120" height="34" rx="6" fill="#DCFCE7" stroke="#16A34A"/><text class="b6sK" x="752" y="224">?</text>
+        <rect x="24" y="270" width="14" height="14" rx="3" fill="#16A34A"/>
+        <text class="b6sN" x="46" y="282">Slide the window one day forward for the next row. The whole series becomes a table of features -&gt; target.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - series to supervised table: a window of the past predicts the next day</figcaption>
+    </figure>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>The three feature families<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Almost every ML forecast is built from three kinds of feature:</p>
+        <ul>
+          <li><strong>Lags</strong> - the value at t-1, t-7, t-14. <code>s.shift(1)</code> is yesterday; <code>s.shift(7)</code> is the same weekday last week. Lags carry the autocorrelation that ARIMA modelled explicitly.</li>
+          <li><strong>Rolling statistics</strong> - a moving mean or std over a recent window, e.g. <code>s.shift(1).rolling(7).mean()</code>. These summarise the recent level and volatility.</li>
+          <li><strong>Calendar features</strong> - day-of-week, month, is-weekend, is-holiday, read straight off the datetime index. These carry seasonality the tree can split on.</li>
+        </ul>
+        <div class="callout tip">
+          <strong>The shift(1) is not optional</strong>
+          Notice <code>s.shift(1).rolling(7).mean()</code>, not <code>s.rolling(7).mean()</code>. The <code>shift(1)</code> pushes the window to end at yesterday, so the feature only uses data you would actually have when forecasting today. Drop the shift and the rolling mean includes today's target - a leak that flatters your score and fails live.
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Why trees, and when this family wins<span class="mini">2 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Any regressor can learn the table, but gradient-boosted trees dominate this space for good reasons:</p>
+        <ul>
+          <li>They capture non-linear interactions (a Saturday effect that only shows during a sale) without you specifying them.</li>
+          <li>They shrug off feature scale and tolerate irrelevant features, so you can throw in many candidates.</li>
+          <li>They scale to hundreds or thousands of related series stacked into one big table - the M5 setup, where a single model forecasts every product in every store.</li>
+        </ul>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p><strong>M5 is why this session exists.</strong> The M5 competition (Walmart hierarchical sales, 2020) saw gradient-boosting and ML/hybrid methods rise to the top of a field long dominated by statistical models - especially where many related series and external drivers were in play. The lesson is not "ML always wins" - the M-competitions still show simple baselines are hard to beat on a single series - but that when you have many series plus drivers, the regression framing scales in a way one-series models do not.</p>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2: DIRECT VS RECURSIVE ============ -->
+  <section class="section" id="strategy">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers multi-step strategy</span>
+      <h2>Forecasting H days: direct vs recursive <span class="tag concept">5 min live</span></h2>
+    </div>
+    <p class="lede">A regressor trained on "features -&gt; next day" predicts one step. To reach H days out you need a strategy. There are two: <strong>recursive</strong> feeds each prediction back in as a lag to predict the next day with one model, and <strong>direct</strong> trains a separate model for each horizon (h=1, h=2, ... h=H). Recursive is simple and lets errors compound; direct avoids compounding but costs H models.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Recursive uses one model feeding its own predictions back as inputs; direct trains a separate model per horizon step">
+        <style>
+          .b6dT { font: 700 13px Inter, sans-serif; fill: #0F172A; }
+          .b6dX { font: 400 12px Inter, sans-serif; fill: #64748B; }
+          .b6dN { font: 600 12px Inter, sans-serif; fill: #14532D; }
+          .b6dH { font: 700 12px Inter, sans-serif; fill: #FFFFFF; }
+          .b6dB { font: 700 13px Inter, sans-serif; fill: #0F172A; }
+        </style>
+        <!-- recursive -->
+        <text class="b6dB" x="24" y="30">Recursive: one model, predictions fed back</text>
+        <rect x="24" y="46" width="120" height="40" rx="8" fill="#16A34A"/><text class="b6dH" x="58" y="71">1 model</text>
+        <rect x="200" y="46" width="90" height="40" rx="8" fill="#DCFCE7" stroke="#16A34A"/><text class="b6dN" x="230" y="71">day 1</text>
+        <rect x="330" y="46" width="90" height="40" rx="8" fill="#DCFCE7" stroke="#16A34A"/><text class="b6dN" x="360" y="71">day 2</text>
+        <rect x="460" y="46" width="90" height="40" rx="8" fill="#DCFCE7" stroke="#16A34A"/><text class="b6dN" x="490" y="71">day 3</text>
+        <text class="b6dX" x="580" y="71">... to day H</text>
+        <line x1="144" y1="66" x2="196" y2="66" stroke="#CBD5E1" stroke-width="2"/><polygon points="200,66 190,61 190,71" fill="#CBD5E1"/>
+        <line x1="290" y1="66" x2="326" y2="66" stroke="#CBD5E1" stroke-width="2"/><polygon points="330,66 320,61 320,71" fill="#CBD5E1"/>
+        <line x1="420" y1="66" x2="456" y2="66" stroke="#CBD5E1" stroke-width="2"/><polygon points="460,66 450,61 450,71" fill="#CBD5E1"/>
+        <!-- feedback arc -->
+        <path d="M245,86 C245,116 90,116 90,90" fill="none" stroke="#86EFAC" stroke-width="2" stroke-dasharray="5 4"/>
+        <polygon points="90,90 85,100 95,100" fill="#86EFAC"/>
+        <text class="b6dX" x="150" y="132">each prediction becomes the next day's lag - errors can compound</text>
+
+        <!-- direct -->
+        <text class="b6dB" x="24" y="176">Direct: one model per horizon step</text>
+        <rect x="24" y="192" width="150" height="34" rx="8" fill="#334155"/><text class="b6dH" x="52" y="214">model h=1</text>
+        <rect x="24" y="232" width="150" height="34" rx="8" fill="#334155"/><text class="b6dH" x="52" y="254">model h=2</text>
+        <rect x="200" y="192" width="150" height="34" rx="8" fill="#64748B"/><text class="b6dH" x="228" y="214">model h=3</text>
+        <rect x="200" y="232" width="150" height="34" rx="8" fill="#64748B"/><text class="b6dH" x="228" y="254">... model h=H</text>
+        <text class="b6dN" x="380" y="218">no compounding, but H models to</text>
+        <text class="b6dN" x="380" y="240">train and maintain</text>
+        <rect x="380" y="252" width="14" height="14" rx="3" fill="#16A34A"/>
+        <text class="b6dX" x="402" y="264">start recursive; go direct only if error compounds too far out</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - recursive (one model, fed back) vs direct (one model per step)</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Leakage: the one mistake that ruins ML forecasts<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The regression framing is powerful precisely because it is flexible - and that flexibility is where leakage sneaks in. Every feature must be computable using only information available at forecast time.</p>
+        <ul>
+          <li><strong>Split by time, never at random.</strong> Same rule as b1. A random split scatters future rows into training and inflates the score.</li>
+          <li><strong>Lag your rolling windows.</strong> <code>shift(1)</code> before <code>rolling</code>, so the window ends yesterday, not today.</li>
+          <li><strong>Only known-in-advance drivers.</strong> A "did it rain" feature is a leak unless you have a rain <em>forecast</em>; the calendar (day-of-week, holidays) is safe because it is known in advance.</li>
+          <li><strong>Drop the warm-up rows.</strong> The first few rows have no full lag/rolling history - <code>dropna()</code> them rather than filling with something you would not have.</li>
+        </ul>
+        <div class="callout tip">
+          <strong>The horizon is a modelling decision again</strong>
+          Recursive is fine for short horizons; the further out you go, the more each fed-back prediction carries its own error. If accuracy falls apart past a certain horizon, that is the signal to switch to direct models for the longer steps.
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ DEMO 1 ============ -->
+  <section class="section" id="demo-1">
+    <div class="section-kicker">
+      <span class="klabel">Demo 1 of 2</span>
+      <h2>Build the supervised feature frame <span class="tag demo">★ 12 min · everyone builds</span></h2>
+    </div>
+    <p class="lede">Turn the Lumen series into a table of features and a target, with every feature engineered to be known at forecast time.</p>
+
+    <div class="steps">
+      <div class="step"><p>Rebuild the Lumen daily series from b1 and put it in a dataframe with the target column <code>y</code>.</p></div>
+      <div class="step"><p>Add lag features with <code>s.shift(1)</code> and <code>s.shift(7)</code>, and rolling stats with <code>s.shift(1).rolling(7)</code>.</p></div>
+      <div class="step"><p>Add calendar features from the datetime index: day-of-week, month, is-weekend.</p></div>
+      <div class="step"><p><code>dropna()</code> the warm-up rows and print the supervised table.</p></div>
+    </div>
+
+    <div class="prompt-box good"><span class="label">★ Run it now (Python) - series to a supervised feature frame</span>import pandas as pd, numpy as np
+
+# rebuild the Lumen daily sessions series (from b1)
+idx = pd.date_range("2026-01-01", periods=112, freq="D")
+season = np.array([40,55,60,50,30,-120,-140])          # weekday shape
+i = np.arange(112)
+y = 1000 + 2.5*i + season[i % 7] + 14*np.sin(i*1.7) + 9*np.cos(i*0.6)
+s = pd.Series(np.round(y), index=idx, name="sessions")
+
+# build the supervised table: features must be known at forecast time
+df = pd.DataFrame({"y": s})
+df["lag_1"]      = s.shift(1)                            # yesterday
+df["lag_7"]      = s.shift(7)                            # same weekday last week
+df["roll_7"]     = s.shift(1).rolling(7).mean()         # mean of the last 7 days
+df["roll_7_std"] = s.shift(1).rolling(7).std()          # recent volatility
+df["dow"]        = df.index.dayofweek                   # 0=Mon .. 6=Sun
+df["month"]      = df.index.month
+df["is_weekend"] = (df.index.dayofweek &gt;= 5).astype(int)
+
+df = df.dropna()                                        # drop warm-up rows w/o full history
+print(df.head())
+print("shape:", df.shape, "| features known at forecast time -&gt; no leakage")</div>
+
+    <div class="callout tip">
+      <strong>Read the table you just made</strong>
+      Each row is now "what we knew -&gt; what happened next". <code>lag_1</code> and <code>lag_7</code> carry the recent value and the weekly echo; <code>roll_7</code> the level; the calendar columns the seasonality. This table, not the raw series, is what the model actually sees.
+    </div>
+  </section>
+
+  <!-- ============ DEMO 2 ============ -->
+  <section class="section" id="demo-2">
+    <div class="section-kicker">
+      <span class="klabel">Demo 2 of 2</span>
+      <h2>Fit gradient boosting and forecast H days <span class="tag demo">★ 10 min · build your own</span></h2>
+    </div>
+    <p class="lede">Split by time, fit a <code>HistGradientBoostingRegressor</code> on the feature frame, then roll a recursive multi-step forecast forward H days and score it against the b1 seasonal-naive baseline. Finish by asking which features carried the prediction.</p>
+
+    <div class="steps">
+      <div class="step"><p>Split the table by time - the last H rows are the test set - and fit the regressor on the training rows.</p></div>
+      <div class="step"><p>Forecast recursively: predict the next day, append it to the history, rebuild that day's features, repeat H times.</p></div>
+      <div class="step"><p>Score MAPE on the holdout and set it beside the seasonal-naive baseline from b1.</p></div>
+      <div class="step"><p>Read permutation importance to see which features matter.</p></div>
+    </div>
+
+    <div class="prompt-box good"><span class="label">★ Run it now (Python) - fit, recursive forecast, MAPE vs baseline</span>from sklearn.ensemble import HistGradientBoostingRegressor
+from sklearn.inspection import permutation_importance
+
+H = 14
+feats = ["lag_1", "lag_7", "roll_7", "roll_7_std", "dow", "month", "is_weekend"]
+train_df = df.iloc[:-H]                                  # split by time, never at random
+
+model = HistGradientBoostingRegressor(max_iter=300, learning_rate=0.05,
+                                      max_depth=4, random_state=0)
+model.fit(train_df[feats], train_df["y"])
+
+# recursive multi-step: feed each prediction back to build the next row's lags
+hist = s.iloc[:-H].copy()
+preds = []
+for step in range(H):
+    t = hist.index[-1] + pd.Timedelta(days=1)
+    row = {"lag_1": hist.iloc[-1], "lag_7": hist.iloc[-7],
+           "roll_7": hist.iloc[-7:].mean(), "roll_7_std": hist.iloc[-7:].std(),
+           "dow": t.dayofweek, "month": t.month,
+           "is_weekend": int(t.dayofweek &gt;= 5)}
+    yhat = model.predict(pd.DataFrame([row])[feats])[0]
+    preds.append(yhat)
+    hist.loc[t] = yhat                                  # append prediction, roll forward
+
+test = s.iloc[-H:]
+fc = pd.Series(preds, index=test.index)
+mape = (np.abs(test.values - fc.values) / test.values).mean() * 100
+print(f"gradient-boosting MAPE: {mape:.1f}%   (vs the b1 seasonal-naive baseline)")
+
+# which features carry the forecast?
+imp = permutation_importance(model, train_df[feats], train_df["y"],
+                             n_repeats=10, random_state=0)
+print(pd.Series(imp.importances_mean, index=feats).sort_values(ascending=False))</div>
+
+    <div class="callout example">
+      <span class="ex-pill">Real world</span>
+      <p><strong>Feature importance is a sanity check, not a victory lap.</strong> On Lumen you should see <code>lag_7</code> and <code>dow</code> near the top - the weekly rhythm is the real signal, exactly what seasonal-naive exploits. If a leaky feature ever tops the list with suspiciously perfect scores, that is your leak alarm. And the ruling is the same as every session: unless this MAPE beats the seasonal-naive baseline on a backtest (b8), the extra machinery has not earned its place. On one clean series, do not be surprised if the simple baseline is right there with you - that is the M-competition lesson, not a bug.</p>
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Try it yourself - this week <span class="tag exercise">◐ 30-45 min total</span></h2>
+    </div>
+    <ul>
+      <li>Build the supervised feature frame on your own daily series. Print it and confirm by eye that every feature uses only past information.</li>
+      <li>Fit <code>HistGradientBoostingRegressor</code> (or XGBoost/LightGBM if installed) and produce a recursive H-step forecast.</li>
+      <li>Score its MAPE and add it to your running table beside seasonal-naive, Holt-Winters (b3), and Prophet (b5). Where does it rank?</li>
+      <li>Add one more feature - a longer lag (t-14) or a rolling std - and see whether it helps or hurts.</li>
+      <li>Deliberately introduce a leak (drop the <code>shift(1)</code> from a rolling feature), re-score, and watch the MAPE fall implausibly. Then fix it.</li>
+      <li>Optional: read the sklearn <code>HistGradientBoostingRegressor</code> docs and skim the M5 competition summary.</li>
+    </ul>
+  </section>
+
+  <!-- ============ SOURCES ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Source material</span>
+      <h2>Sources covered (cited)</h2>
+    </div>
+    <p class="lede">Taught from the gradient-boosting documentation and the M-competition evidence. This session covers:</p>
+    <div class="covered">
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">scikit-learn / gradient boosting (XGBoost, LightGBM) documentation</span><span class="note">Parts 1-2 + both demos · lag/rolling/calendar features, HistGradientBoostingRegressor, importance</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">M-competitions (Makridakis, M5, 2020)</span><span class="note">Part 1 · ML/hybrid methods rose where many related series and drivers were in play</span></div>
+    </div>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions before you go 🎯 <span class="tag exercise">◐ 90 seconds</span></h2>
+    </div>
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">1 · How does ML forecasting reframe the problem?</p>
+      <button class="qopt" type="button">A · It fits a differenced autoregressive model to the raw series</button>
+      <button class="qopt" type="button">B · As supervised regression: a table of lag, rolling, and calendar features predicting the next value</button>
+      <button class="qopt" type="button">C · It decomposes the series into trend, seasonality, and holidays</button>
+      <p class="qwhy">The series becomes an ordinary table - features (lags, rolling stats, calendar) map to a target (the future value) - and any regressor, usually gradient boosting, learns it.</p>
+    </div>
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">2 · Why write <code>s.shift(1).rolling(7).mean()</code> instead of <code>s.rolling(7).mean()</code>?</p>
+      <button class="qopt" type="button">A · It runs faster</button>
+      <button class="qopt" type="button">B · It gives a smoother line</button>
+      <button class="qopt" type="button">C · The shift(1) ends the window yesterday, so the feature does not include today's target - no leakage</button>
+      <p class="qwhy">Without the shift, the rolling mean includes the value you are trying to predict. That is leakage: the score looks great in testing and collapses live.</p>
+    </div>
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">3 · What is the difference between recursive and direct multi-step forecasting?</p>
+      <button class="qopt" type="button">A · Recursive feeds predictions back into one model; direct trains a separate model per horizon step</button>
+      <button class="qopt" type="button">B · Recursive is for daily data, direct is for weekly data</button>
+      <button class="qopt" type="button">C · They are two names for the same thing</button>
+      <p class="qwhy">Recursive uses one model and feeds each prediction back as a lag (errors can compound); direct trains one model per horizon (no compounding, but H models to maintain).</p>
+    </div>
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Builder session 6 cheat sheet <span>· pin this</span></h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>Forecasting as regression</b><span>turn the series into a table: features (lags, rolling, calendar) -&gt; target (next value).</span></div>
+      <div class="cheat-item"><b>Lag features</b><span>s.shift(1), s.shift(7) - yesterday and the same weekday last week. Carry the autocorrelation.</span></div>
+      <div class="cheat-item"><b>Rolling stats</b><span>s.shift(1).rolling(7).mean()/std() - recent level and volatility. The shift(1) prevents leakage.</span></div>
+      <div class="cheat-item"><b>Calendar features</b><span>day-of-week, month, is_weekend from the datetime index. Safe: known in advance.</span></div>
+      <div class="cheat-item"><b>Gradient boosting</b><span>HistGradientBoostingRegressor / XGBoost / LightGBM - the workhorse regressor here.</span></div>
+      <div class="cheat-item"><b>Recursive vs direct</b><span>recursive = one model fed back (errors compound); direct = one model per horizon step.</span></div>
+      <div class="cheat-item"><b>No leakage</b><span>split by time, features known at forecast time only, drop warm-up rows. One leak sinks it.</span></div>
+      <div class="cheat-item"><b>Beat the baseline</b><span>M5 lifted ML with many series + drivers, but on one series simple is still hard to beat.</span></div>
+      <div class="cheat-item"><b>Next session</b><span>b7 - deep forecasting: a cited survey of DeepAR, N-BEATS, and TFT.</span></div>
+    </div>
+  </section>
+
+  <footer class="pagefoot">
+    <span>Builder session 6 of 10 · learn-timeseries-forecasting-with-phoebe · by Phoebe Fu &nbsp;·&nbsp; 📚 <a href="https://phoebefu6.github.io/learn-with-phoebe/">Learn with Phoebe ↗</a></span>
+    <span><a href="b5-prophet.html">← Prev: Prophet</a> &nbsp;·&nbsp; <a href="b7-deep-forecasting.html">Next: Deep forecasting →</a></span>
+  </footer>
+
+</main>
+
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

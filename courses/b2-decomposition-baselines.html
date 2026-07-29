@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Builder session 2 · Decomposition &amp; baselines - learn timeseries forecasting with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-timeseries-forecasting-with-phoebe</a> / Builder session 2 of 10</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn Timeseries Forecasting with Phoebe · Builder track · Session 2 of 10</div>
+    <h1>Decomposition &amp; baselines: <span class="accent">pull the series apart, then set the bar</span></h1>
+    <p class="sub">Before any model, you do two things. First you decompose the series into trend, seasonal, and residual with STL, so you can see what is actually in it. Then you build the family of baselines - naive, drift, and seasonal-naive - because those are the lines every clever model in this course has to beat. We do both in real pandas on the Lumen daily-sessions series, and by the end seasonal-naive wins on our weekly data - exactly the humility lesson the M-competitions keep teaching.</p>
+    <div class="chip-row">
+      <span class="chip level">🟢 Builder track</span>
+      <span class="chip audience">Practitioners: analysts · data scientists · engineers</span>
+      <span class="chip audience">Python 3.10+ · a notebook</span>
+      <span class="chip time">~45 min</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Welcome</span>
+      <span class="a2" style="flex:4">3-17 · STL decomposition</span>
+      <span class="a3" style="flex:5">17-42 · Build-along: STL + baselines</span>
+      <span class="a4" style="flex:1">42-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>Look before you model</h2>
+    </div>
+    <p class="lede">Last session we built the Lumen series, split it by time, and shipped one baseline. Tonight we earn the right to model. <strong>Decomposition</strong> pulls the observed line into its trend, its repeating seasonal shape, and the residual left over - so you stop guessing what is in the data and start seeing it. Then we build the full <strong>baseline family</strong>: naive, drift, and seasonal-naive. These are not throwaway models - they are the scoreboard. Anything you build later has to beat them on a backtest, or it does not ship.</p>
+    <div class="legend">
+      <span class="pill solid">Live - presented in session</span>
+      <span class="pill light">Self-study - read after class</span>
+      <span class="pill peach">★ Run it now (Python)</span>
+      <span class="pill inkpill">Sources covered (cited)</span>
+    </div>
+    <div class="callout win">
+      <strong>★ What you walk out with today</strong>
+      An STL decomposition of the Lumen series with trend, seasonal, and residual you can read; a one-number strength-of-seasonality score; and three working baselines - naive, drift, and seasonal-naive - scored side by side with MAPE on the holdout, so you know the exact bar every model in this course has to clear.
+    </div>
+  </section>
+
+  <!-- ============ PART 1: DECOMPOSITION ============ -->
+  <section class="section" id="decompose">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers FPP3 decomposition (STL)</span>
+      <h2>STL splits a series into three readable parts <span class="tag concept">7 min live</span></h2>
+    </div>
+    <p class="lede">STL - Seasonal-Trend decomposition using Loess - takes the observed line and separates it into a smooth <strong>trend</strong>, a repeating <strong>seasonal</strong> component (here on a weekly period, m=7), and a <strong>residual</strong> - whatever is left. Read together, the three panels tell you which method on the ladder to reach for: strong seasonal shape says a seasonal method, a wandering trend says smoothing, and a fat residual says do not over-promise.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 330" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="STL decomposes the observed slate line into a green trend, a repeating seasonal component, and a residual">
+        <style>
+          .b2sT { font: 700 13px Inter, sans-serif; fill: #0F172A; }
+          .b2sX { font: 400 12px Inter, sans-serif; fill: #64748B; }
+          .b2sN { font: 600 13px Inter, sans-serif; fill: #14532D; }
+          .b2sH { font: 700 12px Inter, sans-serif; fill: #FFFFFF; }
+        </style>
+        <text class="b2sT" x="24" y="26">STL: observed = trend + seasonal + residual</text>
+        <!-- observed -->
+        <rect x="24" y="42" width="150" height="30" rx="6" fill="#334155"/><text class="b2sH" x="44" y="62">Observed</text>
+        <polyline points="184,64 214,54 244,70 274,50 304,60 334,68 364,44 394,58 424,66 454,40 484,52 514,62 544,38 574,50 604,60 634,34" fill="none" stroke="#334155" stroke-width="2.5"/>
+        <text class="b2sX" x="650" y="60">the messy real line</text>
+        <!-- trend -->
+        <rect x="24" y="92" width="150" height="30" rx="6" fill="#16A34A"/><text class="b2sH" x="44" y="112">Trend</text>
+        <polyline points="184,116 634,88" fill="none" stroke="#16A34A" stroke-width="2.5"/>
+        <text class="b2sX" x="650" y="108">the slow drift</text>
+        <!-- seasonal -->
+        <rect x="24" y="142" width="150" height="30" rx="6" fill="#4ADE80"/><text class="b2sH" x="44" y="162">Seasonal</text>
+        <polyline points="184,160 214,150 244,170 274,160 304,150 334,170 364,160 394,150 424,170 454,160 484,150 514,170 544,160 574,150 604,170 634,160" fill="none" stroke="#4ADE80" stroke-width="2.5"/>
+        <text class="b2sX" x="650" y="162">repeats every 7 days</text>
+        <!-- residual -->
+        <rect x="24" y="192" width="150" height="30" rx="6" fill="#86EFAC"/><text class="b2sT" x="44" y="212">Residual</text>
+        <polyline points="184,210 214,204 244,214 274,202 304,212 334,206 364,216 394,203 424,211 454,207 484,215 514,204 544,212 574,208 604,214 634,206" fill="none" stroke="#94A3B8" stroke-width="1.5"/>
+        <text class="b2sX" x="650" y="212">what is left - noise</text>
+        <rect x="24" y="256" width="14" height="14" rx="3" fill="#16A34A"/>
+        <text class="b2sN" x="46" y="268">Strength of seasonality = 1 - Var(residual) / Var(seasonal + residual). Near 1 means the weekly shape dominates.</text>
+        <text class="b2sX" x="24" y="300">A tight residual means the trend and seasonal explain most of the movement - good news for a seasonal model.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - STL separates observed into trend + seasonal + residual</figcaption>
+    </figure>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>Reading the three components<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Each panel answers a different modelling question:</p>
+        <ul>
+          <li><strong>Trend</strong> - is the level drifting up or down, and is it straight or curved? A clear trend rules out a flat naive forecast.</li>
+          <li><strong>Seasonal</strong> - how big and how stable is the repeating shape? A strong, steady weekly pattern is a gift: seasonal-naive alone will already be hard to beat.</li>
+          <li><strong>Residual</strong> - what is left after trend and seasonal are removed? If it is small and patternless, you have captured the signal. If it still has structure, there is more to model.</li>
+        </ul>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p><strong>STL is additive by default, and robust.</strong> Lumen's weekend dips are a fixed weekly shape, so an additive STL fits cleanly. If the seasonal swings grew with the level (bigger sales, bigger weekend dip), you would log-transform first or use a multiplicative view. STL's <code>robust=True</code> option also down-weights one-off spikes like a launch day, so they do not distort the trend.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>STL vs classical decomposition<span class="mini">2 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>FPP3 favours STL over the older classical decomposition for three reasons:</p>
+        <ul>
+          <li>The seasonal component is allowed to <strong>change slowly over time</strong>, not frozen for the whole series.</li>
+          <li>It is <strong>robust to outliers</strong> - a bad day does not bend the trend.</li>
+          <li>You control the smoothness of trend and season directly via the Loess windows.</li>
+        </ul>
+        <p>The tradeoff: STL handles only additive decomposition and one seasonal period at a time. For our weekly Lumen series that is exactly right.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2: THE BASELINE FAMILY ============ -->
+  <section class="section" id="baselines">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers FPP3 simple forecasting methods</span>
+      <h2>The baseline family - the lines to beat <span class="tag concept">6 min live</span></h2>
+    </div>
+    <p class="lede">Three baselines cover almost every simple case, and each is one idea. <strong>Naive</strong>: tomorrow equals today's last value, held flat. <strong>Drift</strong>: naive plus the average slope of the history, so the forecast keeps rising or falling. <strong>Seasonal-naive</strong>: tomorrow equals the same period one cycle ago. On a weekly series like Lumen, seasonal-naive usually wins - and that is the whole point of measuring against it.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 330" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="History in slate, then three baseline forecasts off the end: naive flat, drift sloped, seasonal-naive repeating the last week">
+        <style>
+          .b2bT { font: 700 13px Inter, sans-serif; fill: #0F172A; }
+          .b2bX { font: 400 12px Inter, sans-serif; fill: #64748B; }
+          .b2bN { font: 600 13px Inter, sans-serif; fill: #14532D; }
+          .b2bL { font: 700 12px Inter, sans-serif; fill: #16A34A; }
+        </style>
+        <!-- naive -->
+        <text class="b2bT" x="24" y="26">Naive - hold the last value flat</text>
+        <polyline points="24,70 60,64 96,72 132,58 168,66 204,52 240,60" fill="none" stroke="#334155" stroke-width="2.5"/>
+        <line x1="240" y1="30" x2="240" y2="86" stroke="#CBD5E1" stroke-width="1.5" stroke-dasharray="4 4"/>
+        <polyline points="240,60 420,60" fill="none" stroke="#16A34A" stroke-width="2.5"/>
+        <text class="b2bX" x="440" y="64">flat - no trend, no season</text>
+        <text class="b2bL" x="248" y="46">forecast</text>
+
+        <!-- drift -->
+        <text class="b2bT" x="24" y="128">Drift - last value + average slope</text>
+        <polyline points="24,172 60,166 96,174 132,160 168,168 204,154 240,162" fill="none" stroke="#334155" stroke-width="2.5"/>
+        <line x1="240" y1="132" x2="240" y2="188" stroke="#CBD5E1" stroke-width="1.5" stroke-dasharray="4 4"/>
+        <polyline points="240,162 420,138" fill="none" stroke="#16A34A" stroke-width="2.5"/>
+        <text class="b2bX" x="440" y="150">follows the overall slope</text>
+
+        <!-- seasonal-naive -->
+        <text class="b2bT" x="24" y="230">Seasonal-naive - repeat the last cycle</text>
+        <polyline points="24,274 54,264 84,282 114,272 144,262 174,282 204,272 240,262" fill="none" stroke="#334155" stroke-width="2.5"/>
+        <line x1="240" y1="234" x2="240" y2="292" stroke="#CBD5E1" stroke-width="1.5" stroke-dasharray="4 4"/>
+        <polyline points="240,262 270,282 300,272 330,262 360,282 390,272 420,262" fill="none" stroke="#16A34A" stroke-width="2.5"/>
+        <text class="b2bX" x="440" y="272">copies last week's shape</text>
+        <rect x="640" y="252" width="14" height="14" rx="3" fill="#334155"/><text class="b2bX" x="660" y="264">history</text>
+        <rect x="640" y="272" width="14" height="14" rx="3" fill="#16A34A"/><text class="b2bX" x="660" y="284">forecast</text>
+        <text class="b2bN" x="24" y="318">On a weekly-seasonal series, seasonal-naive carries the pattern forward - which is why it is the honest bar.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - naive flat, drift sloped, seasonal-naive repeats the last week</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Which baseline fits which series<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Match the baseline to the shape you saw in the decomposition:</p>
+        <ul>
+          <li><strong>No trend, no season</strong> - naive is the right bar. A random-walk-like series is genuinely hard to beat.</li>
+          <li><strong>Clear trend, weak season</strong> - drift, so the forecast keeps moving in the trend's direction.</li>
+          <li><strong>Strong season</strong> (our case) - seasonal-naive, which carries the weekly shape forward for free.</li>
+        </ul>
+        <div class="callout tip">
+          <strong>Baselines also give you free prediction intervals</strong>
+          Each baseline has a standard-error formula, so you can attach an interval that widens with the horizon - the honest way to forecast. We build point forecasts today and add intervals properly with backtesting in b8.
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ DEMO 1 ============ -->
+  <section class="section" id="demo-1">
+    <div class="section-kicker">
+      <span class="klabel">Demo 1 of 2</span>
+      <h2>Decompose the Lumen series with STL <span class="tag demo">★ 12 min · everyone builds</span></h2>
+    </div>
+    <p class="lede">Fit STL on the daily series, pull out the three components, and score how seasonal the series really is.</p>
+
+    <div class="steps">
+      <div class="step"><p>Rebuild the Lumen daily series from b1 so this notebook runs standalone.</p></div>
+      <div class="step"><p>Fit <code>STL(s, period=7)</code> and unpack trend, seasonal, and residual.</p></div>
+      <div class="step"><p>Print the seven-day seasonal shape and compute the strength-of-seasonality score.</p></div>
+      <div class="step"><p>Plot <code>res.plot()</code> and read the three panels before moving on.</p></div>
+    </div>
+
+    <div class="prompt-box good"><span class="label">★ Run it now (Python) - STL decomposition</span>import pandas as pd, numpy as np
+from statsmodels.tsa.seasonal import STL
+
+# rebuild the Lumen daily sessions series (from b1)
+idx = pd.date_range("2026-01-01", periods=112, freq="D")
+season = np.array([40,55,60,50,30,-120,-140])          # weekday shape
+i = np.arange(112)
+y = 1000 + 2.5*i + season[i % 7] + 14*np.sin(i*1.7) + 9*np.cos(i*0.6)
+s = pd.Series(np.round(y), index=idx, name="sessions")
+
+res = STL(s, period=7, robust=True).fit()             # weekly seasonality
+trend, seasonal, resid = res.trend, res.seasonal, res.resid
+print(seasonal.iloc[:7].round(1).to_list())            # the weekly shape
+
+# strength of seasonality (FPP3): 1 - Var(resid) / Var(seasonal + resid)
+Fs = max(0.0, 1 - resid.var() / (seasonal + resid).var())
+print(f"strength of seasonality: {Fs:.2f}  (near 1 = strongly seasonal)")
+res.plot()                                             # trend / seasonal / resid panels</div>
+
+    <div class="callout tip">
+      <strong>Read the residual panel hardest</strong>
+      The residual is your honesty check. If it still shows a wave or a drift, STL has not captured everything and a richer model may help. If it looks like patternless noise, the trend and seasonal already explain the series - and a simple seasonal method will be tough to beat.
+    </div>
+  </section>
+
+  <!-- ============ DEMO 2 ============ -->
+  <section class="section" id="demo-2">
+    <div class="section-kicker">
+      <span class="klabel">Demo 2 of 2</span>
+      <h2>Score the baseline family on the holdout <span class="tag demo">★ 10 min · build your own</span></h2>
+    </div>
+    <p class="lede">Build naive, drift, and seasonal-naive for the horizon H, score each with MAPE on the same holdout, and print the table. On this weekly series, seasonal-naive should come out on top.</p>
+
+    <div class="steps">
+      <div class="step"><p>Reuse the time split from b1: last H=14 days as test, the rest as train.</p></div>
+      <div class="step"><p>Build all three baselines as pandas Series aligned to the test index.</p></div>
+      <div class="step"><p>Score each with MAPE and sort the table - the winner is your bar for the rest of the course.</p></div>
+    </div>
+
+    <div class="prompt-box good"><span class="label">★ Run it now (Python) - naive, drift, seasonal-naive + MAPE table</span>H, m = 14, 7                                  # horizon, weekly period
+train, test = s.iloc[:-H], s.iloc[-H:]
+
+# naive: last observed value, held flat
+naive  = pd.Series(train.iloc[-1], index=test.index)
+
+# drift: last value + average slope of the history * step
+slope  = (train.iloc[-1] - train.iloc[0]) / (len(train) - 1)
+drift  = pd.Series(train.iloc[-1] + slope * np.arange(1, H + 1), index=test.index)
+
+# seasonal-naive: same weekday one cycle (7 days) ago
+snaive = pd.Series([train.iloc[-m + (k % m)] for k in range(H)], index=test.index)
+
+def mape(actual, fc):
+    return (np.abs(actual.values - fc.values) / actual.values).mean() * 100
+
+table = pd.DataFrame(
+    {"MAPE %": [mape(test, naive), mape(test, drift), mape(test, snaive)]},
+    index=["naive", "drift", "seasonal-naive"]).round(2)
+print(table.sort_values("MAPE %"))            # seasonal-naive should win here</div>
+
+    <div class="callout example">
+      <span class="ex-pill">Real world</span>
+      <p><strong>This table is your scoreboard for the whole course.</strong> In b3 you will watch Holt-Winters try to beat the seasonal-naive line; in b4 SARIMA; in b6 gradient boosting. The M-competitions - the field's largest empirical bake-offs - found that simple methods and their combinations are remarkably hard to beat, so a complex model only earns its keep if it clears this bar on a proper backtest (b8). If it cannot, the baseline ships, and it is also your fallback when a fancy model fails in production.</p>
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Try it yourself - this week <span class="tag exercise">◐ 30-45 min total</span></h2>
+    </div>
+    <ul>
+      <li>Run STL on your own daily series (or the Lumen one). Print the seven-day seasonal shape and the strength-of-seasonality score.</li>
+      <li>Look hard at the residual panel. Write one sentence: does anything structured remain, or is it noise?</li>
+      <li>Build all three baselines - naive, drift, seasonal-naive - and score them with MAPE on your holdout. Which wins, and does it match the decomposition?</li>
+      <li>Set that winning MAPE aside as your bar. Every model from b3 onward has to beat it.</li>
+      <li>Optional: skim FPP3 chapters 3 (decomposition) and 5.2 (simple forecasting methods) - the open textbook this track follows.</li>
+    </ul>
+  </section>
+
+  <!-- ============ SOURCES ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Source material</span>
+      <h2>Sources covered (cited)</h2>
+    </div>
+    <p class="lede">Taught from the forecasting canon and the published empirical evidence. This session covers:</p>
+    <div class="covered">
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Forecasting: Principles and Practice, 3rd ed (Hyndman &amp; Athanasopoulos, FPP3)</span><span class="note">Ch 3 (STL decomposition) · Ch 5.2 (naive, drift, seasonal-naive)</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">M-competitions (Makridakis, M4/M5)</span><span class="note">Demo 2 · simple methods and combinations are hard to beat</span></div>
+    </div>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions before you go 🎯 <span class="tag exercise">◐ 90 seconds</span></h2>
+    </div>
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">1 · What three parts does STL split a series into?</p>
+      <button class="qopt" type="button">A · Mean, median, and mode</button>
+      <button class="qopt" type="button">B · Trend, seasonal, and residual</button>
+      <button class="qopt" type="button">C · Train, validation, and test</button>
+      <p class="qwhy">STL - Seasonal-Trend decomposition using Loess - separates the observed line into a smooth trend, a repeating seasonal component, and the residual left over. Reading the three tells you which method to reach for.</p>
+    </div>
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">2 · How does the drift baseline differ from the naive baseline?</p>
+      <button class="qopt" type="button">A · Drift repeats last week's shape</button>
+      <button class="qopt" type="button">B · Drift uses a neural network</button>
+      <button class="qopt" type="button">C · Drift adds the history's average slope, so the forecast keeps rising or falling</button>
+      <p class="qwhy">Naive holds the last value flat. Drift extends the line by the average slope between the first and last points, so a trending series keeps moving in that direction.</p>
+    </div>
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">3 · Why score all three baselines before building a real model?</p>
+      <button class="qopt" type="button">A · The best baseline is the bar every later model must beat on a backtest</button>
+      <button class="qopt" type="button">B · Baselines remove the need for a train/test split</button>
+      <button class="qopt" type="button">C · A model is only valid if it uses all three baselines</button>
+      <p class="qwhy">The winning baseline is your scoreboard. The M-competitions show simple methods are hard to beat, so a complex model only earns its complexity if it clears that bar - and the baseline is your production fallback.</p>
+    </div>
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Builder session 2 cheat sheet <span>· pin this</span></h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>STL</b><span>Seasonal-Trend decomposition using Loess: observed = trend + seasonal + residual. <code>STL(s, period=7)</code>.</span></div>
+      <div class="cheat-item"><b>Read the residual</b><span>patternless noise = signal captured; leftover structure = more to model.</span></div>
+      <div class="cheat-item"><b>Strength of seasonality</b><span>1 - Var(resid) / Var(seasonal + resid). Near 1 = strongly seasonal.</span></div>
+      <div class="cheat-item"><b>Naive</b><span>tomorrow = today's last value, held flat. The bar for no-trend, no-season series.</span></div>
+      <div class="cheat-item"><b>Drift</b><span>last value + average slope. The bar when there is a clear trend.</span></div>
+      <div class="cheat-item"><b>Seasonal-naive</b><span>tomorrow = same weekday last week. The bar for seasonal series - usually the winner.</span></div>
+      <div class="cheat-item"><b>Score with MAPE</b><span>build all three, sort the table, keep the winner as your scoreboard.</span></div>
+      <div class="cheat-item"><b>Next session</b><span>b3 - exponential smoothing / ETS (SES, Holt, Holt-Winters) + the live forecaster.</span></div>
+    </div>
+  </section>
+
+  <footer class="pagefoot">
+    <span>Builder session 2 of 10 · learn-timeseries-forecasting-with-phoebe · by Phoebe Fu &nbsp;·&nbsp; 📚 <a href="https://phoebefu6.github.io/learn-with-phoebe/">Learn with Phoebe ↗</a></span>
+    <span><a href="b1-forecasting-foundations.html">← Previous: Forecasting foundations</a> &nbsp;·&nbsp; <a href="b3-exponential-smoothing.html">Next: Exponential smoothing →</a></span>
+  </footer>
+
+</main>
+
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Builder session 4 · ARIMA &amp; SARIMA - learn timeseries forecasting with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-timeseries-forecasting-with-phoebe</a> / Builder session 4 of 10</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn Timeseries Forecasting with Phoebe · Builder track · Session 4 of 10</div>
+    <h1>ARIMA &amp; SARIMA: <span class="accent">the Box-Jenkins method</span></h1>
+    <p class="sub">ARIMA is the classical workhorse of forecasting: model a series by its own past values and past errors, once you have made it stationary. This session builds the Box-Jenkins method in real Python on the Lumen series - test for stationarity, difference to get it, read the orders off the ACF and PACF, then fit a seasonal SARIMA for the weekly pattern and let auto_arima search. ARIMA shines on stable, structured series, and it asks for more care than exponential smoothing - so we treat it with the discipline it needs.</p>
+    <div class="chip-row">
+      <span class="chip level">🟡 Builder track</span>
+      <span class="chip audience">Practitioners: analysts · data scientists · engineers</span>
+      <span class="chip audience">Python 3.10+ · a notebook</span>
+      <span class="chip time">~45 min</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Welcome</span>
+      <span class="a2" style="flex:4">3-18 · Stationarity + orders</span>
+      <span class="a3" style="flex:5">18-42 · Build-along: ADF + SARIMA</span>
+      <span class="a4" style="flex:1">42-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>Model the series by its own past</h2>
+    </div>
+    <p class="lede">Exponential smoothing (b3) modelled the series through weighted averages of recent values. ARIMA takes a different route from the same idea: forecast each point from a linear mix of its own recent <strong>values</strong> (the AR part) and its own recent <strong>errors</strong> (the MA part), after <strong>differencing</strong> the series into something stable. Add a seasonal copy of the same machinery and you have SARIMA - the method that carries the weekly Lumen rhythm. It is powerful and it is fiddly, so Box and Jenkins gave us a disciplined recipe: make it stationary, read the orders, fit, then check the residuals.</p>
+    <div class="legend">
+      <span class="pill solid">Live - presented in session</span>
+      <span class="pill light">Self-study - read after class</span>
+      <span class="pill peach">★ Run it now (Python)</span>
+      <span class="pill inkpill">Sources covered (cited)</span>
+    </div>
+    <div class="callout win">
+      <strong>★ What you walk out with today</strong>
+      A stationarity check with the ADF test, a differenced Lumen series, ACF and PACF plots you can read for orders, and a fitted SARIMA(p,d,q)(P,D,Q,7) that forecasts H days ahead with a confidence interval - scored against the seasonal-naive baseline from b1 so you know whether it earned its complexity.
+    </div>
+  </section>
+
+  <!-- ============ PART 1: STATIONARITY ============ -->
+  <section class="section" id="stationarity">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers Box-Jenkins &amp; FPP3 (stationarity)</span>
+      <h2>Stationarity, and why differencing gets you there <span class="tag concept">7 min live</span></h2>
+    </div>
+    <p class="lede">ARIMA assumes the series is <strong>stationary</strong> - its mean, variance, and autocorrelation do not drift over time. A trending or seasonal series is not stationary, so we <strong>difference</strong> it: replace each value with the change from the previous one. First differencing removes a trend; seasonal differencing (subtract the value 7 days ago) removes the weekly pattern. The "I" in ARIMA is that integration order, d.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A trending seasonal series is not stationary; after differencing it is stationary, wobbling around a flat mean">
+        <style>
+          .b4sT { font: 700 13px Inter, sans-serif; fill: #0F172A; }
+          .b4sX { font: 400 12px Inter, sans-serif; fill: #64748B; }
+          .b4sN { font: 600 13px Inter, sans-serif; fill: #14532D; }
+          .b4sB { font: 700 13px Inter, sans-serif; fill: #991B1B; }
+          .b4sG { font: 700 13px Inter, sans-serif; fill: #14532D; }
+        </style>
+        <!-- not stationary -->
+        <rect x="24" y="30" width="200" height="26" rx="6" fill="#FEF2F2" stroke="#FCA5A5"/>
+        <text class="b4sB" x="38" y="48">Not stationary - the level drifts</text>
+        <line x1="24" y1="150" x2="420" y2="150" stroke="#E2E8F0" stroke-width="1"/>
+        <polyline points="24,140 60,128 96,138 132,116 168,126 204,104 240,116 276,94 312,106 348,84 384,96 420,74" fill="none" stroke="#334155" stroke-width="2.5"/>
+        <text class="b4sX" x="24" y="176">mean climbs with the trend + weekly wiggle</text>
+
+        <!-- stationary -->
+        <rect x="470" y="30" width="220" height="26" rx="6" fill="#F0FDF4" stroke="#16A34A"/>
+        <text class="b4sG" x="484" y="48">Stationary - after differencing</text>
+        <line x1="470" y1="120" x2="856" y2="120" stroke="#16A34A" stroke-width="1.5" stroke-dasharray="5 4"/>
+        <text class="b4sX" x="700" y="114">flat mean</text>
+        <polyline points="470,120 500,108 530,130 560,112 590,126 620,110 650,128 680,114 710,124 740,108 770,128 800,114 830,122 856,116" fill="none" stroke="#16A34A" stroke-width="2.5"/>
+        <text class="b4sX" x="470" y="176">changes wobble around zero - stable to model</text>
+
+        <rect x="24" y="228" width="14" height="14" rx="3" fill="#16A34A"/>
+        <text class="b4sN" x="46" y="240">The ADF test checks it numerically: a small p-value ( &lt; 0.05 ) says stationary. Difference until it passes.</text>
+        <text class="b4sX" x="24" y="272">First difference removes a trend (d); seasonal difference at lag 7 removes the weekly pattern (D).</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - differencing turns a drifting series into a stationary one</figcaption>
+    </figure>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>AR, I, and MA in plain terms<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>ARIMA(p, d, q) is three ideas bolted together:</p>
+        <ul>
+          <li><strong>AR(p) - autoregression.</strong> Predict today from the last p values. "Busy days tend to follow busy days" is an AR effect.</li>
+          <li><strong>I(d) - integration.</strong> The number of times you difference to reach stationarity. Usually 0 or 1; 2 at most.</li>
+          <li><strong>MA(q) - moving average.</strong> Predict today from the last q forecast <em>errors</em>. It lets the model correct after a shock.</li>
+        </ul>
+        <div class="callout tip">
+          <strong>Do not confuse MA(q) with a rolling average</strong>
+          The "moving average" in ARIMA is a regression on past <em>errors</em>, not a smoothed line over past values. Same words, different idea - a classic source of confusion when you first meet Box-Jenkins.
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Reading ACF and PACF for orders<span class="mini">2 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Two correlograms suggest the orders on the differenced series:</p>
+        <ul>
+          <li><strong>ACF</strong> (autocorrelation) - correlation of the series with its own lags. A sharp cut-off after lag q hints at an MA(q).</li>
+          <li><strong>PACF</strong> (partial autocorrelation) - the same, with intermediate lags removed. A sharp cut-off after lag p hints at an AR(p).</li>
+          <li>A spike at lag 7 (and multiples) in either plot flags the <strong>seasonal</strong> orders P and Q.</li>
+        </ul>
+        <p>These are guides, not gospel. In practice you shortlist a few orders from the plots and let an information criterion (AIC) or <code>auto_arima</code> pick between them.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2: SARIMA ORDERS ============ -->
+  <section class="section" id="orders">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers Box-Jenkins seasonal models</span>
+      <h2>SARIMA - a seasonal copy of the same machinery <span class="tag concept">6 min live</span></h2>
+    </div>
+    <p class="lede">SARIMA adds a second set of orders that operate at the seasonal lag: (P, D, Q) with period m. For Lumen, m=7. So a SARIMA(p,d,q)(P,D,Q,7) has a non-seasonal part that handles day-to-day structure and a seasonal part that handles the week-to-week pattern - one model, two rhythms.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Non-seasonal orders AR p, I d, MA q and seasonal orders P, D, Q at period 7 feed into one SARIMA model">
+        <style>
+          .b4oT { font: 700 13px Inter, sans-serif; fill: #FFFFFF; }
+          .b4oI { font: 700 13px Inter, sans-serif; fill: #0F172A; }
+          .b4oX { font: 400 11px Inter, sans-serif; fill: #64748B; }
+          .b4oW { font: 700 12px Inter, sans-serif; fill: #DCFCE7; }
+          .b4oN { font: 600 13px Inter, sans-serif; fill: #14532D; }
+        </style>
+        <text class="b4oI" x="24" y="28">Non-seasonal part (p, d, q)</text>
+        <rect x="24" y="42" width="150" height="52" rx="8" fill="#16A34A"/><text class="b4oT" x="70" y="66">AR(p)</text><text class="b4oW" x="38" y="84">past values</text>
+        <rect x="190" y="42" width="150" height="52" rx="8" fill="#16A34A"/><text class="b4oT" x="238" y="66">I(d)</text><text class="b4oW" x="204" y="84">differencing</text>
+        <rect x="356" y="42" width="150" height="52" rx="8" fill="#16A34A"/><text class="b4oT" x="404" y="66">MA(q)</text><text class="b4oW" x="370" y="84">past errors</text>
+
+        <text class="b4oI" x="24" y="140">Seasonal part (P, D, Q) at period m = 7</text>
+        <rect x="24" y="154" width="150" height="52" rx="8" fill="#14532D"/><text class="b4oT" x="70" y="178">AR(P)</text><text class="b4oW" x="34" y="196">weekly values</text>
+        <rect x="190" y="154" width="150" height="52" rx="8" fill="#14532D"/><text class="b4oT" x="238" y="178">I(D)</text><text class="b4oW" x="196" y="196">seasonal diff</text>
+        <rect x="356" y="154" width="150" height="52" rx="8" fill="#14532D"/><text class="b4oT" x="404" y="178">MA(Q)</text><text class="b4oW" x="366" y="196">weekly errors</text>
+
+        <!-- arrows to the model -->
+        <path d="M 506 68 L 610 120" fill="none" stroke="#CBD5E1" stroke-width="2"/>
+        <path d="M 506 180 L 610 148" fill="none" stroke="#CBD5E1" stroke-width="2"/>
+        <rect x="620" y="96" width="236" height="80" rx="10" fill="#F0FDF4" stroke="#16A34A" stroke-width="2"/>
+        <text class="b4oI" x="642" y="128">SARIMA</text>
+        <text class="b4oX" x="642" y="150">(p, d, q)(P, D, Q, 7)</text>
+        <text class="b4oX" x="642" y="166">one model, two rhythms</text>
+
+        <rect x="24" y="252" width="14" height="14" rx="3" fill="#16A34A"/>
+        <text class="b4oN" x="46" y="264">auto_arima searches the orders by AIC so you do not hand-pick every value from the plots.</text>
+        <text class="b4oX" x="24" y="298" style="font-size:12px">ARIMA shines on stable, structured series. It needs more care than ETS - always check the residuals afterwards.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - non-seasonal (p,d,q) and seasonal (P,D,Q,7) orders feed one SARIMA</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Let auto_arima search, but keep judgement<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p><code>auto_arima</code> (pmdarima) walks the order space and picks the combination with the best AIC, so you are not guessing every value by eye. Use it well:</p>
+        <ul>
+          <li><strong>Fix what you know.</strong> Pass <code>m=7</code> for the weekly period and let it search seasonal orders around it.</li>
+          <li><strong>Bound the differencing.</strong> Set sensible <code>d</code> and <code>D</code> (0 or 1) from the ADF test, rather than letting the search wander.</li>
+          <li><strong>Always check residuals.</strong> A good fit leaves white-noise residuals. If the ACF of residuals still has spikes, the orders are wrong - AIC alone will not tell you that.</li>
+        </ul>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p><strong>ARIMA vs ETS is a judgement call.</strong> On stable, structured series with clear autocorrelation, ARIMA can edge out exponential smoothing - but it asks for stationarity, order selection, and residual checks that ETS does not. FPP3's guidance: try both, backtest them, and keep whichever wins on your real horizon. Neither gets to skip the seasonal-naive bar.</p>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ DEMO 1 ============ -->
+  <section class="section" id="demo-1">
+    <div class="section-kicker">
+      <span class="klabel">Demo 1 of 2</span>
+      <h2>Test stationarity, difference, read ACF/PACF <span class="tag demo">★ 12 min · everyone builds</span></h2>
+    </div>
+    <p class="lede">Run the ADF test on the level series, difference it, confirm stationarity, then plot the correlograms to shortlist orders.</p>
+
+    <div class="steps">
+      <div class="step"><p>Rebuild the Lumen daily series from b1 so this notebook runs standalone.</p></div>
+      <div class="step"><p>Run <code>adfuller</code> on the level and on the first difference; read the p-values.</p></div>
+      <div class="step"><p>Plot <code>plot_acf</code> and <code>plot_pacf</code> on the differenced series and note where they cut off.</p></div>
+    </div>
+
+    <div class="prompt-box good"><span class="label">★ Run it now (Python) - ADF test + differencing + ACF/PACF</span>import pandas as pd, numpy as np
+import matplotlib.pyplot as plt
+from statsmodels.tsa.stattools import adfuller
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+
+# rebuild the Lumen daily sessions series (from b1)
+idx = pd.date_range("2026-01-01", periods=112, freq="D")
+season = np.array([40,55,60,50,30,-120,-140])
+i = np.arange(112)
+y = 1000 + 2.5*i + season[i % 7] + 14*np.sin(i*1.7) + 9*np.cos(i*0.6)
+s = pd.Series(np.round(y), index=idx, name="sessions")
+
+def adf(x, label):
+    stat, p = adfuller(x.dropna())[:2]
+    verdict = "stationary" if p &lt; 0.05 else "NOT stationary"
+    print(f"{label:12s} ADF p = {p:.3f}  ->  {verdict}")
+
+adf(s, "level")                 # trending + seasonal -> not stationary
+d1 = s.diff()                   # first difference removes the trend
+adf(d1, "differenced")          # should now pass
+
+fig, ax = plt.subplots(1, 2, figsize=(11, 3))
+plot_acf(d1.dropna(),  lags=21, ax=ax[0])   # MA(q): where ACF cuts off
+plot_pacf(d1.dropna(), lags=21, ax=ax[1])   # AR(p): where PACF cuts off
+plt.tight_layout(); plt.show()              # spikes at lag 7 = seasonal orders</div>
+
+    <div class="callout tip">
+      <strong>Difference just enough, no more</strong>
+      Over-differencing injects artificial negative autocorrelation and inflates the forecast variance. Difference until the ADF test passes and the ACF decays, then stop. Usually d is 0 or 1, and one seasonal difference (D=1) handles the weekly pattern.
+    </div>
+  </section>
+
+  <!-- ============ DEMO 2 ============ -->
+  <section class="section" id="demo-2">
+    <div class="section-kicker">
+      <span class="klabel">Demo 2 of 2</span>
+      <h2>Fit SARIMA, forecast with an interval, beat the baseline <span class="tag demo">★ 10 min · build your own</span></h2>
+    </div>
+    <p class="lede">Let <code>auto_arima</code> search the seasonal orders, forecast H days with a confidence interval, and score MAPE against the seasonal-naive baseline from b1. A forecast is a probability, not a promise - so we always carry the interval.</p>
+
+    <div class="steps">
+      <div class="step"><p>Reuse the time split from b1: last H=14 days as test, the rest as train.</p></div>
+      <div class="step"><p>Fit <code>auto_arima(train, seasonal=True, m=7)</code> and read the chosen orders.</p></div>
+      <div class="step"><p>Forecast H with a 95% interval, then compare MAPE to seasonal-naive - did it earn its complexity?</p></div>
+    </div>
+
+    <div class="prompt-box good"><span class="label">★ Run it now (Python) - auto_arima SARIMA + interval + MAPE vs baseline</span>from pmdarima import auto_arima
+# statsmodels alternative:
+# from statsmodels.tsa.statespace.sarimax import SARIMAX
+# fit = SARIMAX(train, order=(1,1,1), seasonal_order=(1,1,1,7)).fit(disp=False)
+
+H, m = 14, 7
+train, test = s.iloc[:-H], s.iloc[-H:]
+
+model = auto_arima(train, seasonal=True, m=m, d=1, D=1,
+                   stepwise=True, suppress_warnings=True)
+print(model.order, model.seasonal_order)          # chosen (p,d,q)(P,D,Q,7)
+
+fc, ci = model.predict(n_periods=H, return_conf_int=True, alpha=0.05)
+fc = pd.Series(fc, index=test.index)
+
+def mape(actual, f):
+    return (np.abs(actual.values - f.values) / actual.values).mean() * 100
+
+# b1 seasonal-naive baseline on the same split
+snaive = pd.Series([train.iloc[-m + (k % m)] for k in range(H)], index=test.index)
+print(f"SARIMA MAPE       {mape(test, fc):.2f}%")
+print(f"seasonal-naive    {mape(test, snaive):.2f}%   (the bar to beat)")
+print(f"95% interval width, day {H}: {ci[-1, 1] - ci[-1, 0]:.0f} sessions")</div>
+
+    <div class="callout example">
+      <span class="ex-pill">Real world</span>
+      <p><strong>Watch the interval widen with the horizon.</strong> Print the confidence band for day 1 and day 14 - the day-14 band is far wider, because uncertainty compounds the further out you forecast. That is honest, not a flaw. And if SARIMA does not beat seasonal-naive on this backtest, it has not earned the extra machinery here - report that plainly and keep the simpler model, exactly as the M-competitions would predict.</p>
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Try it yourself - this week <span class="tag exercise">◐ 30-45 min total</span></h2>
+    </div>
+    <ul>
+      <li>Run the ADF test on your own series at the level and after first differencing. Record both p-values and decide d.</li>
+      <li>Plot the ACF and PACF of the differenced series. Write down a shortlist of two or three candidate orders.</li>
+      <li>Fit <code>auto_arima</code> with <code>m=7</code>, forecast your real horizon with a 95% interval, and note how much wider the band is at the last step than the first.</li>
+      <li>Score MAPE against your seasonal-naive baseline. Did SARIMA beat it? Write one honest sentence either way.</li>
+      <li>Optional: skim FPP3 chapter 9 (ARIMA) and Box &amp; Jenkins (1970) - the origin of the method you just used.</li>
+    </ul>
+  </section>
+
+  <!-- ============ SOURCES ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Source material</span>
+      <h2>Sources covered (cited)</h2>
+    </div>
+    <p class="lede">Taught from the forecasting canon and its founding text. This session covers:</p>
+    <div class="covered">
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Box &amp; Jenkins (1970), Time Series Analysis: Forecasting and Control</span><span class="note">Parts 1-2 · stationarity, differencing, ACF/PACF, AR/I/MA orders, seasonal models</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Forecasting: Principles and Practice, 3rd ed (Hyndman &amp; Athanasopoulos, FPP3)</span><span class="note">Ch 9 (ARIMA) · differencing, unit-root tests, SARIMA, auto_arima</span></div>
+    </div>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions before you go 🎯 <span class="tag exercise">◐ 90 seconds</span></h2>
+    </div>
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">1 · Why must a series be stationary before fitting ARIMA?</p>
+      <button class="qopt" type="button">A · Stationary series are faster to load</button>
+      <button class="qopt" type="button">B · It removes the need for a train/test split</button>
+      <button class="qopt" type="button">C · ARIMA assumes a stable mean, variance, and autocorrelation - a drifting series breaks that</button>
+      <p class="qwhy">ARIMA models the series by its own past values and errors, which only works if the statistical properties are stable over time. Differencing removes trend and seasonality to get there; the ADF test confirms it.</p>
+    </div>
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">2 · What do the ACF and PACF plots help you choose?</p>
+      <button class="qopt" type="button">A · The AR and MA orders (p and q) for the model</button>
+      <button class="qopt" type="button">B · The learning rate of the optimiser</button>
+      <button class="qopt" type="button">C · The random seed</button>
+      <p class="qwhy">A cut-off in the PACF suggests the AR order p; a cut-off in the ACF suggests the MA order q. Spikes at lag 7 flag the seasonal orders. They are guides you confirm with AIC or auto_arima.</p>
+    </div>
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">3 · What does the seasonal part (P, D, Q, m) of SARIMA add?</p>
+      <button class="qopt" type="button">A · A neural network layer</button>
+      <button class="qopt" type="button">B · A second copy of the AR/I/MA machinery operating at the seasonal lag (here m=7)</button>
+      <button class="qopt" type="button">C · A guarantee the model beats the baseline</button>
+      <p class="qwhy">SARIMA handles two rhythms: the non-seasonal (p,d,q) for day-to-day structure and the seasonal (P,D,Q) at period m for the week-to-week pattern. It still has to beat seasonal-naive on a backtest.</p>
+    </div>
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Builder session 4 cheat sheet <span>· pin this</span></h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>Stationarity</b><span>stable mean, variance, autocorrelation. ARIMA needs it. Check with <code>adfuller</code> (p &lt; 0.05 = stationary).</span></div>
+      <div class="cheat-item"><b>Differencing (d)</b><span>replace value with its change. First diff removes trend; seasonal diff (lag 7) removes the week. Difference just enough.</span></div>
+      <div class="cheat-item"><b>AR(p)</b><span>regress on the last p values. PACF cut-off suggests p.</span></div>
+      <div class="cheat-item"><b>MA(q)</b><span>regress on the last q errors (not a rolling average). ACF cut-off suggests q.</span></div>
+      <div class="cheat-item"><b>SARIMA</b><span>(p,d,q)(P,D,Q,m) - a seasonal copy of AR/I/MA at period m=7 for the weekly pattern.</span></div>
+      <div class="cheat-item"><b>auto_arima</b><span>searches orders by AIC with <code>m=7</code>. Fix d, D from the ADF test; always check residuals.</span></div>
+      <div class="cheat-item"><b>Always an interval</b><span>forecast with a 95% band - it widens with the horizon. A point alone is false confidence.</span></div>
+      <div class="cheat-item"><b>Next session</b><span>b5 - Prophet: decomposable trend + seasonality + holidays, analyst-friendly.</span></div>
+    </div>
+  </section>
+
+  <footer class="pagefoot">
+    <span>Builder session 4 of 10 · learn-timeseries-forecasting-with-phoebe · by Phoebe Fu &nbsp;·&nbsp; 📚 <a href="https://phoebefu6.github.io/learn-with-phoebe/">Learn with Phoebe ↗</a></span>
+    <span><a href="b3-exponential-smoothing.html">← Previous: Exponential smoothing</a> &nbsp;·&nbsp; <a href="b5-prophet.html">Next: Prophet →</a></span>
+  </footer>
+
+</main>
+
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

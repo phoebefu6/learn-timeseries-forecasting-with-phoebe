@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leader session 2 · Shape of a series - learn timeseries forecasting with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-timeseries-forecasting-with-phoebe</a> / Leader session 2 of 6</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn Timeseries Forecasting with Phoebe · Leader track · Session 2 of 6</div>
+    <h1>The shape of a series: <span class="accent">trend, seasonality, cycle, noise</span></h1>
+    <p class="sub">Before you can forecast a number, you have to see what it is made of. Any series that moves over time - web sessions, sales, tickets - is really four things stacked together: a slow <em>trend</em>, a repeating <em>seasonality</em>, a longer irregular <em>cycle</em>, and random <em>noise</em>. No math today. Just the plain-English shapes, so that when a team shows you a forecast, you can point at the picture and say what it got right and what it can never get.</p>
+    <div class="chip-row">
+      <span class="chip level">🟢 Leader track</span>
+      <span class="chip audience">Leaders: PM · biz · product</span>
+      <span class="chip audience">No code · concepts + decisions</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Recap</span>
+      <span class="a2" style="flex:5">3-24 · The four building blocks</span>
+      <span class="a3" style="flex:4">24-42 · Seasonality vs cycle · signal vs noise</span>
+      <span class="a4" style="flex:1">42-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>Where we are</h2>
+    </div>
+    <p class="lede">Last session: <em>why</em> a business forecasts, and the two-sided cost of getting it wrong. This session is the vocabulary you need for every session after it. A forecaster's whole job is to pull a series apart into its pieces, project the pieces that persist, and be honest that one piece - the noise - simply cannot be projected. If you can name the four building blocks and tell seasonality from a cycle, you can read any forecast in the building. Our running example stays <strong>Lumen</strong>, forecasting its daily website sessions and signups.</p>
+    <div class="legend">
+      <span class="pill solid">Live - presented in session</span>
+      <span class="pill light">Self-study - read after class</span>
+      <span class="pill inkpill">Sources covered (cited)</span>
+    </div>
+    <div class="callout win">
+      <strong>★ What you walk out with today</strong>
+      The four building blocks of any time series in plain English, the difference between seasonality (a pattern on a fixed clock) and a cycle (a swing of no fixed length), and the single most useful distinction for a leader - the part of a series you can forecast (the signal) versus the part nobody can (the noise).
+    </div>
+  </section>
+
+  <!-- ============ PART 1: FOUR BLOCKS ============ -->
+  <section class="section" id="four-blocks">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · FPP3 decomposition</span>
+      <h2>A series is four things stacked together <span class="tag concept">8 min live</span></h2>
+    </div>
+    <p class="lede">Take Lumen's daily sessions and pull them apart. Under the messy line there is a <strong>trend</strong> (the slow drift, up as the brand grows), a <strong>seasonality</strong> (the weekly rhythm - quiet weekends, busy Mondays), a longer <strong>cycle</strong> (multi-month swings with the wider market), and <strong>noise</strong> (the daily wiggle nobody can explain). Add them back up and you get the observed line.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A time series decomposed into observed, trend, weekly seasonality, and noise stacked together">
+        <style>
+          .a2dT { font: 700 13px Inter, sans-serif; fill: #0F172A; }
+          .a2dX { font: 400 12px Inter, sans-serif; fill: #64748B; }
+          .a2dN { font: 600 13px Inter, sans-serif; fill: #14532D; }
+          .a2dH { font: 700 12px Inter, sans-serif; fill: #FFFFFF; }
+        </style>
+        <text class="a2dT" x="24" y="26">Observed = trend + seasonality + noise</text>
+        <!-- observed -->
+        <rect x="24" y="40" width="150" height="30" rx="6" fill="#14532D"/><text class="a2dH" x="44" y="60">Observed</text>
+        <polyline points="184,58 224,52 264,60 304,44 344,54 384,40 424,50 464,36 504,46 544,32 584,42 624,28" fill="none" stroke="#334155" stroke-width="2.5"/>
+        <text class="a2dX" x="640" y="58">the messy real line</text>
+        <!-- trend -->
+        <rect x="24" y="90" width="150" height="30" rx="6" fill="#16A34A"/><text class="a2dH" x="44" y="110">Trend</text>
+        <polyline points="184,116 624,86" fill="none" stroke="#16A34A" stroke-width="2.5"/>
+        <text class="a2dX" x="640" y="106">slow drift upward</text>
+        <!-- seasonality -->
+        <rect x="24" y="140" width="150" height="30" rx="6" fill="#4ADE80"/><text class="a2dH" x="44" y="160">Seasonality</text>
+        <polyline points="184,158 214,148 244,168 274,158 304,148 334,168 364,158 394,148 424,168 454,158 484,148 514,168 544,158 574,148 604,168 624,158" fill="none" stroke="#4ADE80" stroke-width="2.5"/>
+        <text class="a2dX" x="640" y="160">repeats every week</text>
+        <!-- noise -->
+        <rect x="24" y="190" width="150" height="30" rx="6" fill="#CBD5E1"/><text class="a2dT" x="44" y="210">Noise</text>
+        <polyline points="184,208 214,202 244,212 274,200 304,210 334,204 364,214 394,201 424,209 454,205 484,213 514,202 544,210 574,206 604,212 624,204" fill="none" stroke="#94A3B8" stroke-width="1.5"/>
+        <text class="a2dX" x="640" y="210">irregular, unforecastable</text>
+        <rect x="24" y="252" width="14" height="14" rx="3" fill="#16A34A"/>
+        <text class="a2dN" x="46" y="264">Forecasting = keep the signal (trend + seasonality), be honest that the noise cannot be projected.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - a series is trend + seasonality + noise, stacked</figcaption>
+    </figure>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>The four blocks, in one line each<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <ul>
+          <li><strong>Trend</strong> - the slow drift up or down over a long stretch. Lumen's sessions climbing as the brand grows.</li>
+          <li><strong>Seasonality</strong> - a pattern that repeats on a <em>fixed</em> period: daily (busy afternoons), weekly (quiet weekends), or yearly (holiday spikes).</li>
+          <li><strong>Cycle</strong> - a longer swing with <em>no</em> fixed length, tied to bigger forces like the economy or a category trend.</li>
+          <li><strong>Noise</strong> - the irregular wiggle left over. Real, but unforecastable - do not let anyone promise to predict it.</li>
+        </ul>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p><strong>Why a leader cares about the split.</strong> When a team says "our forecast missed by 8% on Tuesday", the right question is: was that the signal we should have caught, or the noise nobody can? Missing a clear weekly pattern is a bug. Missing an unrepeatable random spike is just life. Knowing which is which tells you whether to push the team or defend them.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Level: the current height of the line<span class="mini">2 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>One more word you will hear: <strong>level</strong>. It is simply where the line sits right now - its current baseline height, before trend and seasonality push it around. Think of it as "roughly how many sessions a normal day gets at the moment". A forecast starts from today's level, then adds the trend and the seasonal shape on top.</p>
+        <p>You do not need the math. You just need to hear "level" and picture the current resting height of the line - the starting point everything else adjusts from.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2: SEASONALITY VS CYCLE ============ -->
+  <section class="section" id="season-vs-cycle">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · the distinction that trips people up</span>
+      <h2>Seasonality vs cycle: fixed clock vs loose swing <span class="tag concept">6 min live</span></h2>
+    </div>
+    <p class="lede">These two get confused constantly, and the difference decides what a forecast can promise. <strong>Seasonality</strong> repeats on a fixed, known period - a week, a year - so you can project it confidently. A <strong>cycle</strong> swings over a longer, <em>irregular</em> stretch (think a market boom and bust) with no fixed length, so it is far harder to call. Same-looking wiggles; completely different forecastability.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Seasonality repeats on a fixed period while a cycle swings over an irregular length">
+        <style>
+          .a2cT { font: 700 13px Inter, sans-serif; fill: #0F172A; }
+          .a2cX { font: 400 12px Inter, sans-serif; fill: #64748B; }
+          .a2cN { font: 600 13px Inter, sans-serif; fill: #14532D; }
+          .a2cH { font: 700 12px Inter, sans-serif; fill: #FFFFFF; }
+          .a2cD { stroke: #94A3B8; stroke-width: 1; stroke-dasharray: 4 4; }
+        </style>
+        <text class="a2cT" x="24" y="26">Same-looking wiggles, very different to forecast</text>
+
+        <!-- seasonality row -->
+        <rect x="24" y="52" width="150" height="30" rx="6" fill="#4ADE80"/><text class="a2cH" x="44" y="72">Seasonality</text>
+        <line class="a2cD" x1="210" y1="56" x2="210" y2="116"/>
+        <line class="a2cD" x1="290" y1="56" x2="290" y2="116"/>
+        <line class="a2cD" x1="370" y1="56" x2="370" y2="116"/>
+        <line class="a2cD" x1="450" y1="56" x2="450" y2="116"/>
+        <line class="a2cD" x1="530" y1="56" x2="530" y2="116"/>
+        <line class="a2cD" x1="610" y1="56" x2="610" y2="116"/>
+        <polyline points="190,86 210,68 230,86 250,104 270,86 290,68 310,86 330,104 350,86 370,68 390,86 410,104 430,86 450,68 470,86 490,104 510,86 530,68 550,86 570,104 590,86 610,68 630,86 650,104 670,86" fill="none" stroke="#16A34A" stroke-width="2.5"/>
+        <text class="a2cX" x="686" y="90">fixed period</text>
+        <text class="a2cX" x="190" y="132">equal gaps - a known clock (day / week / year), so you can project it</text>
+
+        <!-- cycle row -->
+        <rect x="24" y="176" width="150" height="30" rx="6" fill="#334155"/><text class="a2cH" x="44" y="196">Cycle</text>
+        <line class="a2cD" x1="250" y1="160" x2="250" y2="236"/>
+        <line class="a2cD" x1="430" y1="160" x2="430" y2="236"/>
+        <line class="a2cD" x1="660" y1="160" x2="660" y2="236"/>
+        <polyline points="190,206 250,176 320,222 360,212 430,178 520,236 600,200 660,180 700,208" fill="none" stroke="#64748B" stroke-width="2.5"/>
+        <text class="a2cX" x="716" y="204">no fixed length</text>
+        <text class="a2cX" x="190" y="252">unequal gaps - tied to the economy or a trend, so far harder to call</text>
+
+        <rect x="24" y="272" width="14" height="14" rx="3" fill="#16A34A"/>
+        <text class="a2cN" x="46" y="284">Rule of thumb: fixed calendar period = seasonality (forecastable). No fixed length = cycle (treat with caution).</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - fixed period vs irregular swing</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Why this matters when you read a forecast<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The distinction is not academic - it changes what you should believe:</p>
+        <ul>
+          <li><strong>Seasonality is a safe bet.</strong> "Weekends are quiet, December spikes" repeats on the calendar. A forecast that captures it deserves your trust.</li>
+          <li><strong>Cycles are a warning.</strong> When a team explains a big miss with "we are in a downturn", they are pointing at a cycle - real, but genuinely hard to time. Do not punish a team for failing to predict a turning point nobody could.</li>
+          <li><strong>Ask "is this on a fixed clock?"</strong> If yes, expect it to be forecast well. If no, expect a wider range and more humility.</li>
+        </ul>
+        <div class="callout tip">
+          <strong>The tell</strong>
+          Seasonality has a name you can say ("weekly", "yearly"). A cycle does not - it is "every few years, roughly". If nobody can name the period, treat it as a cycle and widen the range.
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 3: SIGNAL VS NOISE ============ -->
+  <section class="section" id="signal-noise">
+    <div class="section-kicker">
+      <span class="klabel">Part 3 · what is forecastable</span>
+      <h2>Signal you can project, noise you cannot <span class="tag concept">5 min live</span></h2>
+    </div>
+    <p class="lede">This is the most useful single idea for a leader. A series splits into <strong>signal</strong> - the persistent trend and seasonality you can carry forward - and <strong>noise</strong> - the irregular part that, by definition, cannot be predicted. A good forecast captures the signal and puts an honest range around the noise. A bad one pretends the noise is signal and promises precision it cannot have.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Signal such as trend and seasonality can be projected forward, while noise cannot and becomes a range">
+        <style>
+          .a2fT { font: 700 15px Inter, sans-serif; fill: #0F172A; }
+          .a2fH { font: 700 13px Inter, sans-serif; fill: #FFFFFF; }
+          .a2fh { font: 700 13px Inter, sans-serif; fill: #14532D; }
+          .a2fX { font: 400 12.5px Inter, sans-serif; fill: #334155; }
+          .a2fN { font: 600 13px Inter, sans-serif; fill: #14532D; }
+        </style>
+        <text class="a2fT" x="24" y="28">Two piles: one you can forecast, one you cannot</text>
+
+        <!-- signal box -->
+        <rect x="24" y="48" width="400" height="150" rx="12" fill="#F0FDF4" stroke="#16A34A" stroke-width="2"/>
+        <rect x="44" y="66" width="150" height="28" rx="6" fill="#16A34A"/><text class="a2fH" x="64" y="85">Signal ✓</text>
+        <text class="a2fh" x="44" y="122">Trend + seasonality</text>
+        <text class="a2fX" x="44" y="146">Persistent and repeating, so you can</text>
+        <text class="a2fX" x="44" y="166">carry it forward with confidence.</text>
+        <text class="a2fX" x="44" y="186">This is what a model earns its keep on.</text>
+
+        <!-- noise box -->
+        <rect x="456" y="48" width="400" height="150" rx="12" fill="#FEF2F2" stroke="#FCA5A5" stroke-width="1.5"/>
+        <rect x="476" y="66" width="150" height="28" rx="6" fill="#991B1B"/><text class="a2fH" x="496" y="85">Noise ✗</text>
+        <text class="a2fh" x="476" y="122" fill="#991B1B">The irregular leftover</text>
+        <text class="a2fX" x="476" y="146" fill="#991B1B">Random and unrepeatable, so it cannot</text>
+        <text class="a2fX" x="476" y="166" fill="#991B1B">be predicted - only bounded by a range.</text>
+        <text class="a2fX" x="476" y="186" fill="#991B1B">Anyone promising to nail it is bluffing.</text>
+
+        <rect x="24" y="230" width="14" height="14" rx="3" fill="#16A34A"/>
+        <text class="a2fN" x="46" y="242">A good forecast projects the signal and puts an honest range around the noise. It never pretends noise is signal.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - signal is forecastable, noise is not</figcaption>
+    </figure>
+  </section>
+
+  <!-- ============ WALK-THROUGH (thought exercise) ============ -->
+  <section class="section" id="walkthrough">
+    <div class="section-kicker">
+      <span class="klabel">Walk-through · think it through</span>
+      <h2>Read Lumen's series out loud <span class="tag demo">◐ 10 min · together</span></h2>
+    </div>
+    <p class="lede">No code - just naming the pieces, which is a skill you use every time a dashboard lands on your desk.</p>
+
+    <div class="steps">
+      <div class="step"><p><strong>Find the trend.</strong> Over the last year Lumen's daily sessions have drifted up as the brand grew. That slow climb is the trend - the piece a forecast should extend.</p></div>
+      <div class="step"><p><strong>Name the seasonal period.</strong> Sessions dip every weekend and rise midweek - a weekly pattern on a fixed clock. That is seasonality, and it is safely forecastable.</p></div>
+      <div class="step"><p><strong>Spot the cycle, carefully.</strong> A months-long dip during a category slowdown is a cycle, not seasonality - no fixed length, so expect a wider range there.</p></div>
+      <div class="step"><p><strong>Point at the noise.</strong> One random Tuesday spike from a viral post is noise - do not expect any model to have called it, and do not build a plan around it repeating.</p></div>
+    </div>
+
+    <div class="callout tip">
+      <strong>Do this with your own dashboard</strong>
+      Open any chart your team lives by. Say out loud: here is the trend, here is the seasonal period, here is a possible cycle, here is the noise. Once you can narrate a series, you can judge any forecast of it.
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Try it yourself - this week <span class="tag exercise">◐ 20-30 min total</span></h2>
+    </div>
+    <ul>
+      <li>Pick a series you know well - web traffic, sales, tickets, headcount demand - and pull up its chart over at least a year.</li>
+      <li>Name the <strong>trend</strong> in one line: is it drifting up, down, or flat?</li>
+      <li>Name the <strong>seasonal period</strong>: is the repeating pattern daily, weekly, or yearly? Say the clock out loud.</li>
+      <li>Name one source of <strong>noise</strong>: an irregular event that moved the line but will not repeat on a schedule.</li>
+      <li>Bonus: is there a longer <strong>cycle</strong> you can see - a multi-month swing with no fixed length? Flag it as "forecast with caution".</li>
+      <li>Optional: skim FPP3 chapter on time-series decomposition (Hyndman &amp; Athanasopoulos, otexts.com/fpp3).</li>
+    </ul>
+  </section>
+
+  <!-- ============ SOURCES ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Source material</span>
+      <h2>Sources covered (cited)</h2>
+    </div>
+    <p class="lede">The building blocks come straight from the forecasting canon. This session covers:</p>
+    <div class="covered">
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Forecasting: Principles and Practice, 3rd ed (Hyndman &amp; Athanasopoulos, FPP3)</span><span class="note">Decomposition · trend, seasonality, cycle, noise, and level in plain English</span></div>
+    </div>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions before you go 🎯 <span class="tag exercise">◐ 90 seconds</span></h2>
+    </div>
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">1 · What are the four building blocks of a time series?</p>
+      <button class="qopt" type="button">A · Mean, median, mode, and range</button>
+      <button class="qopt" type="button">B · Rows, columns, headers, and totals</button>
+      <button class="qopt" type="button">C · Trend, seasonality, cycle, and noise</button>
+      <p class="qwhy">Any series is a slow trend, a repeating seasonality, a longer irregular cycle, and random noise, stacked together. Forecasting projects the persistent pieces.</p>
+    </div>
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">2 · What is the difference between seasonality and a cycle?</p>
+      <button class="qopt" type="button">A · Seasonality repeats on a fixed period (week, year); a cycle swings over an irregular length with no fixed clock</button>
+      <button class="qopt" type="button">B · Seasonality is always yearly; a cycle is always weekly</button>
+      <button class="qopt" type="button">C · They are two words for the same thing</button>
+      <p class="qwhy">Seasonality is on a known calendar clock, so it is forecastable. A cycle (like a market boom-bust) has no fixed length and is far harder to call.</p>
+    </div>
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">3 · Why does the signal-vs-noise split matter to a leader?</p>
+      <button class="qopt" type="button">A · Noise is the most important part to forecast</button>
+      <button class="qopt" type="button">B · You can forecast the signal (trend + seasonality) but not the noise, so a good forecast projects the signal and puts a range around the noise</button>
+      <button class="qopt" type="button">C · A good model removes all noise and predicts every day exactly</button>
+      <p class="qwhy">Noise is random and unrepeatable - it cannot be predicted, only bounded by a range. Anyone promising to nail every day is pretending noise is signal.</p>
+    </div>
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Leader session 2 cheat sheet <span>· pin this</span></h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>Four building blocks</b><span>trend + seasonality + cycle + noise, stacked. Add them up and you get the observed line.</span></div>
+      <div class="cheat-item"><b>Trend</b><span>the slow drift up or down over a long stretch. The piece a forecast extends.</span></div>
+      <div class="cheat-item"><b>Seasonality</b><span>a pattern on a fixed clock - daily, weekly, yearly. Safely forecastable.</span></div>
+      <div class="cheat-item"><b>Cycle</b><span>a longer swing with no fixed length (the economy, a trend). Forecast with caution.</span></div>
+      <div class="cheat-item"><b>Noise</b><span>the irregular leftover. Real but unforecastable - only bounded by a range.</span></div>
+      <div class="cheat-item"><b>Level</b><span>the current resting height of the line - where it sits before trend and seasonality push it.</span></div>
+      <div class="cheat-item"><b>Signal vs noise</b><span>project the signal (trend + seasonality); never pretend the noise is predictable.</span></div>
+      <div class="cheat-item"><b>Next session</b><span>a3 - the methods without math: the ladder from baselines to smoothing, ARIMA, Prophet, ML and deep.</span></div>
+    </div>
+  </section>
+
+  <footer class="pagefoot">
+    <span>Leader session 2 of 6 · learn-timeseries-forecasting-with-phoebe · by Phoebe Fu &nbsp;·&nbsp; 📚 <a href="https://phoebefu6.github.io/learn-with-phoebe/">Learn with Phoebe ↗</a></span>
+    <span><a href="a1-why-forecast.html">← Previous: Why forecast</a> &nbsp;·&nbsp; <a href="a3-methods-no-math.html">Next: The methods, without math →</a></span>
+  </footer>
+
+</main>
+
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

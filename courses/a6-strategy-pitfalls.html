@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leader session 6 · Strategy &amp; pitfalls - learn timeseries forecasting with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-timeseries-forecasting-with-phoebe</a> / Leader session 6 of 6</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn Timeseries Forecasting with Phoebe · Leader track · Session 6 of 6</div>
+    <h1>Strategy &amp; pitfalls: <span class="accent">and when NOT to forecast at all</span></h1>
+    <p class="sub">The leader capstone. Everything so far has been about doing forecasting well; this session is about doing it wisely - matching the forecast to the decision, spotting the classic ways it goes wrong, knowing when a series simply cannot be forecast, and setting a realistic roadmap from a first baseline to a monitored production loop. The hardest and most valuable judgement a leader brings is knowing when the honest answer is "we should not forecast this at all".</p>
+    <div class="chip-row">
+      <span class="chip level">🟠 Leader track</span>
+      <span class="chip audience">Leaders: PM · biz · product</span>
+      <span class="chip audience">No code · concepts + decisions</span>
+      <span class="chip time">Capstone · Session 6 of 6</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Recap</span>
+      <span class="a2" style="flex:4">3-20 · Horizon &amp; the pitfalls</span>
+      <span class="a3" style="flex:4">20-38 · When NOT to forecast</span>
+      <span class="a4" style="flex:2">38-45 · Roadmap &amp; wrap</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>Forecasting is a means, not a trophy</h2>
+    </div>
+    <p class="lede">A forecast exists to make a decision better. If it does not change what anyone does, it is decoration. Over five sessions you have learned what a series is, the ladder of methods, who builds it, and how to measure it. This capstone turns that into leadership judgement: choose the right horizon, avoid the traps that make good-looking models fail, recognise the series you should leave alone, and grow capability at a sustainable pace. The through-line is honesty - a confident forecast of an unforecastable thing is worse than no forecast, because someone will act on it.</p>
+    <div class="legend">
+      <span class="pill solid">Live - discussed in session</span>
+      <span class="pill light">Self-study - read after class</span>
+      <span class="pill inkpill">Sources covered (cited)</span>
+    </div>
+    <div class="callout win">
+      <strong>★ What you walk out with today</strong>
+      A way to match horizon and frequency to a decision, a mental checklist of the four classic pitfalls (leakage, over-fitting, chasing accuracy past its value, ignoring the interval), the honest signals that say "do not forecast this", a first take on build vs buy, and a crawl-walk-run roadmap you can bring back to your team.
+    </div>
+  </section>
+
+  <!-- ============ PART 1: HORIZON ============ -->
+  <section class="section" id="horizon">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers FPP3, practice</span>
+      <h2>Match the horizon to the decision <span class="tag concept">5 min live</span></h2>
+    </div>
+    <p class="lede">The first strategic choice is not which model - it is how far ahead and how often. A staffing decision needs tomorrow at daily resolution; a capacity investment needs next year at monthly. The rule that never changes: <strong>the further out you forecast, the more uncertain it gets</strong>. Push the horizon past what the data can honestly support and you are not planning, you are guessing with extra steps.</p>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>Horizon, frequency, and the cost of both errors<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <ul>
+          <li><strong>Start from the decision, work back.</strong> What choice does this forecast inform, and when is it made? That fixes the horizon and frequency - not the other way round.</li>
+          <li><strong>Longer horizon = wider interval.</strong> Next week is fairly knowable; next year much less. Accept it, and plan with the range, not the point.</li>
+          <li><strong>Both directions of error cost money.</strong> Forecast too high and you over-stock, over-staff, over-build. Too low and you stock out, miss demand, disappoint. Ask which error is more expensive here - it changes the whole design.</li>
+        </ul>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p><strong>Lumen wants "a forecast".</strong> The useful question is <em>which</em> one. Daily sessions 14 days out drives ad and support staffing. Monthly signups a year out drives the hiring plan. Same brand, two different forecasts, two horizons, two acceptable error bars. Bundling them into one "the forecast" is how projects quietly fail.</p>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2: PITFALLS ============ -->
+  <section class="section" id="pitfalls">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers FPP3, M-competitions, practice</span>
+      <h2>The four classic pitfalls <span class="tag concept">7 min live</span></h2>
+    </div>
+    <p class="lede">Most forecasting failures are not exotic. They are the same handful of traps, over and over. You do not need to catch them in the code - you need to recognise the symptom and ask the question that exposes each one.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Four guardrail tiles: leakage, over-fitting, no interval, and regime change, each with the symptom and the question to ask">
+        <style>
+          .a6pT { font: 700 13px Inter, sans-serif; fill: #0F172A; }
+          .a6pH { font: 700 14px Inter, sans-serif; fill: #991B1B; }
+          .a6pB { font: 400 12px Inter, sans-serif; fill: #334155; }
+          .a6pC { font: 700 12px Inter, sans-serif; fill: #14532D; }
+        </style>
+        <text class="a6pT" x="24" y="26">Four guardrails - the symptom, and the question to ask</text>
+        <!-- Tile 1 leakage -->
+        <rect x="24" y="44" width="404" height="100" rx="10" fill="#FEF2F2" stroke="#FCA5A5" stroke-width="1.5"/>
+        <text class="a6pH" x="44" y="74">1 · Leakage (peeking at the future)</text>
+        <text class="a6pB" x="44" y="98">Symptom: amazing on paper, poor live. A feature used</text>
+        <text class="a6pB" x="44" y="116">info not known at forecast time, or test tuned the model.</text>
+        <text class="a6pC" x="44" y="136">Ask: was it split strictly by time?</text>
+        <!-- Tile 2 over-fitting -->
+        <rect x="452" y="44" width="404" height="100" rx="10" fill="#FEF2F2" stroke="#FCA5A5" stroke-width="1.5"/>
+        <text class="a6pH" x="472" y="74">2 · Over-fitting</text>
+        <text class="a6pB" x="472" y="98">Symptom: nails the history, misses the future. The model</text>
+        <text class="a6pB" x="472" y="116">memorised noise instead of learning the signal.</text>
+        <text class="a6pC" x="472" y="136">Ask: does it beat naive on a backtest?</text>
+        <!-- Tile 3 no interval -->
+        <rect x="24" y="160" width="404" height="100" rx="10" fill="#FEF2F2" stroke="#FCA5A5" stroke-width="1.5"/>
+        <text class="a6pH" x="44" y="190">3 · Ignoring the interval</text>
+        <text class="a6pB" x="44" y="214">Symptom: one confident number drives a plan. No range,</text>
+        <text class="a6pB" x="44" y="232">so nobody prepared for the likely swing.</text>
+        <text class="a6pC" x="44" y="252">Ask: what is the interval, and does it cover?</text>
+        <!-- Tile 4 regime change -->
+        <rect x="452" y="160" width="404" height="100" rx="10" fill="#FEF2F2" stroke="#FCA5A5" stroke-width="1.5"/>
+        <text class="a6pH" x="472" y="190">4 · Chasing accuracy past value</text>
+        <text class="a6pB" x="472" y="214">Symptom: months spent shaving 0.3% error that changes</text>
+        <text class="a6pB" x="472" y="232">no decision. Effort outran business value.</text>
+        <text class="a6pC" x="472" y="252">Ask: would a better number change the call?</text>
+        <rect x="24" y="276" width="14" height="14" rx="3" fill="#16A34A"/>
+        <text class="a6pC" x="46" y="288">Each trap has a one-line question. If your team cannot answer it, you have found the risk.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - four guardrails: leakage, over-fitting, no interval, chasing accuracy</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Regime change - when the past stops predicting the future<span class="mini">2 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The deepest pitfall is not in the model at all. Every forecast assumes tomorrow resembles yesterday. When the world shifts - a new pricing model, a competitor's launch, a pandemic, a policy change - that assumption breaks, and history becomes a poor guide to what comes next. This is a <strong>regime change</strong>.</p>
+        <ul>
+          <li><strong>No model rescues you from a regime change.</strong> A more complex model fit to the old regime just fails more confidently.</li>
+          <li><strong>The interval is the early warning.</strong> When live errors keep landing outside the prediction interval, the regime may have shifted - time to re-examine, not to re-tune.</li>
+          <li><strong>Judgement re-enters here.</strong> After a genuine break, human context about <em>why</em> often beats any automated forecast until enough new data accrues.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Cold-start - forecasting a series with no history<span class="mini">2 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>A brand-new product, store, or campaign has no past to learn from. You cannot fit a model to data that does not exist - but you are not helpless.</p>
+        <ul>
+          <li><strong>Analogs.</strong> Borrow the shape from a similar existing series (a comparable product's first 90 days) and adjust.</li>
+          <li><strong>Hierarchy.</strong> Forecast the group you do have history for (the category), then allocate a share to the new item.</li>
+          <li><strong>Judgement, stated as a range.</strong> An honest expert estimate with a wide interval beats a precise-looking model trained on nothing.</li>
+        </ul>
+        <div class="callout tip">
+          <strong>Be loud about the uncertainty</strong>
+          A cold-start forecast should carry a visibly wide interval that narrows as real data arrives. The mistake is presenting a first-week guess with the same confidence as a mature, backtested forecast.
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 3: WHEN NOT TO FORECAST ============ -->
+  <section class="section" id="when-not">
+    <div class="section-kicker">
+      <span class="klabel">Part 3 · covers M-competitions, practice</span>
+      <h2>When NOT to forecast <span class="tag concept">6 min live</span></h2>
+    </div>
+    <p class="lede">The most senior thing a leader can say in a forecasting review is "we should not forecast this". It protects the team from a false number that someone will inevitably act on. There are three honest reasons to decline.</p>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>Too little data, a regime change, or a rule is enough<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <ul>
+          <li><strong>Too little data.</strong> A handful of observations cannot reveal a trend or a seasonal pattern. Any "forecast" is really an opinion with a chart. Wait, use analogs, or decide by judgement.</li>
+          <li><strong>A regime change.</strong> If the process that generated the past is gone, the past cannot predict the future. Forecasting across a genuine break manufactures false confidence.</li>
+          <li><strong>A simple rule is good enough.</strong> If "order the same as last month" or a fixed safety buffer already makes the decision well, a forecasting project adds cost and fragility for no decision gain. The best forecast is sometimes no forecast.</li>
+        </ul>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p><strong>Honesty beats a confident guess.</strong> Presented with a brand-new SKU and asked for a 12-month demand forecast, the wise answer is: "We have two weeks of data through a launch spike - any monthly number would be fiction. Here is an analog-based range, we will replace it with a real forecast once we have a clean season." A confident forecast of an unforecastable series is worse than none, because it looks trustworthy.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Build vs buy - a brief leader call<span class="mini">2 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Once forecasting is worth doing, should you build in-house or buy a managed service? A quick frame:</p>
+        <ul>
+          <li><strong>Buy</strong> when forecasting is not your differentiator, the series are standard, and you want speed. A managed service handles the plumbing so a small team can ship.</li>
+          <li><strong>Build</strong> when forecasting <em>is</em> core to the business, you need custom logic or tight integration, and you have the team to own it long term.</li>
+          <li><strong>Either way, you still own the honesty.</strong> Backtesting, beating naive, and reporting intervals are your responsibility whether the model is yours or a vendor's. A bought forecast is not exempt from the four checks.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 4: ROADMAP ============ -->
+  <section class="section" id="roadmap">
+    <div class="section-kicker">
+      <span class="klabel">Part 4 · the capability ladder</span>
+      <h2>A crawl-walk-run roadmap <span class="tag concept">5 min live</span></h2>
+    </div>
+    <p class="lede">You do not need deep models on day one. Forecasting capability grows in stages, and each stage must earn the next by proving value on a backtest. Start with the baseline, add smoothing and Prophet, make it honest with backtests and intervals, reach for ML only where it pays, then close the loop with monitoring.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A five-step maturity staircase: baseline, then smoothing and Prophet, then backtest and intervals, then ML and ensemble, then a monitored loop">
+        <style>
+          .a6rT { font: 700 13px Inter, sans-serif; fill: #0F172A; }
+          .a6rH { font: 700 13px Inter, sans-serif; fill: #FFFFFF; }
+          .a6rS { font: 400 11px Inter, sans-serif; fill: #DCFCE7; }
+          .a6rL { font: 700 12px Inter, sans-serif; fill: #14532D; }
+          .a6rX { font: 400 12px Inter, sans-serif; fill: #64748B; }
+        </style>
+        <text class="a6rT" x="24" y="26">Crawl → walk → run - each step earns the next on a backtest</text>
+        <!-- Step 1 -->
+        <rect x="24" y="228" width="150" height="60" rx="8" fill="#86EFAC"/>
+        <text class="a6rL" x="40" y="254">1 · Baseline</text>
+        <text class="a6rX" x="40" y="274">naive / seasonal</text>
+        <!-- Step 2 -->
+        <rect x="186" y="188" width="150" height="100" rx="8" fill="#4ADE80"/>
+        <text class="a6rL" x="202" y="214">2 · Smoothing</text>
+        <text class="a6rX" x="202" y="234">ETS / Prophet</text>
+        <!-- Step 3 -->
+        <rect x="348" y="148" width="150" height="140" rx="8" fill="#16A34A"/>
+        <text class="a6rH" x="364" y="174">3 · Backtest</text>
+        <text class="a6rS" x="364" y="194">+ intervals</text>
+        <text class="a6rS" x="364" y="212">beat naive first</text>
+        <!-- Step 4 -->
+        <rect x="510" y="108" width="150" height="180" rx="8" fill="#15803D"/>
+        <text class="a6rH" x="526" y="134">4 · ML / ensemble</text>
+        <text class="a6rS" x="526" y="154">only where it</text>
+        <text class="a6rS" x="526" y="172">pays on backtest</text>
+        <!-- Step 5 -->
+        <rect x="672" y="68" width="184" height="220" rx="8" fill="#14532D"/>
+        <text class="a6rH" x="688" y="94">5 · Monitored loop</text>
+        <text class="a6rS" x="688" y="114">track error, watch</text>
+        <text class="a6rS" x="688" y="132">drift, retrain</text>
+        <!-- ground -->
+        <line x1="24" y1="288" x2="856" y2="288" stroke="#CBD5E1" stroke-width="1.5"/>
+        <text class="a6rL" x="24" y="312">Never skip step 3. A model that cannot beat naive on a backtest never advances to step 4.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - baseline → smoothing → backtest &amp; intervals → ML → monitored loop</figcaption>
+    </figure>
+
+    <div class="callout win">
+      <strong>The leader-track wrap</strong>
+      Forecasting pays off wherever you plan ahead (Session 1). Every series is trend + seasonality + noise (Session 2). The methods form a ladder from baselines to deep models (Session 3), built by a team from analyst to monitoring (Session 4), measured honestly with backtests, MASE, and intervals (Session 5). And the wisest move of all is knowing which series to leave alone (this session). Bring the four checks and the crawl-walk-run ladder to your next forecasting conversation - that is the leader's contribution.
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Try it yourself - this week <span class="tag exercise">◐ 25-35 min total</span></h2>
+    </div>
+    <ul>
+      <li>Draft your org's four-step forecasting roadmap: name the baseline you would start from, the first real method, how you would backtest and add intervals, and what "run" looks like (ML or a monitored loop).</li>
+      <li>For each step, write the one decision it unlocks - if a step unlocks no decision, cut it.</li>
+      <li>Name <strong>one series your org should NOT try to forecast</strong>, and write why (too little data, a recent regime change, or a simple rule already suffices).</li>
+      <li>Pick one live forecast and run it against the four pitfalls: any leakage risk, any over-fitting, is there an interval, is anyone chasing accuracy past its value?</li>
+      <li>Optional: skim FPP3 (Hyndman &amp; Athanasopoulos, otexts.com/fpp3) on judgemental forecasting and the M-competition findings on simple methods.</li>
+    </ul>
+  </section>
+
+  <!-- ============ SOURCES ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Source material</span>
+      <h2>Sources covered (cited)</h2>
+    </div>
+    <p class="lede">Taught from the forecasting canon and the published empirical evidence. This session covers:</p>
+    <div class="covered">
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Forecasting: Principles and Practice, 3rd ed (Hyndman &amp; Athanasopoulos, FPP3), otexts.com/fpp3</span><span class="note">horizon, uncertainty growing with the horizon, judgemental forecasting, cold-start</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">M-competitions (Makridakis et al., M4 2018 / M5 2020)</span><span class="note">complexity must earn its keep; the humility case for simple methods and knowing when not to model</span></div>
+    </div>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions before you go 🎯 <span class="tag exercise">◐ 90 seconds</span></h2>
+    </div>
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">1 · What should set the horizon and frequency of a forecast?</p>
+      <button class="qopt" type="button">A · Whatever the model supports</button>
+      <button class="qopt" type="button">B · The decision it informs - and remember uncertainty grows the further out you go</button>
+      <button class="qopt" type="button">C · Always forecast as far ahead as possible</button>
+      <p class="qwhy">Start from the decision and work back. A longer horizon means a wider interval; push past what the data supports and you are guessing, not planning.</p>
+    </div>
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">2 · Which is an honest reason NOT to forecast a series?</p>
+      <button class="qopt" type="button">A · The team prefers a different tool</button>
+      <button class="qopt" type="button">B · The chart would look boring</button>
+      <button class="qopt" type="button">C · Too little data, a recent regime change, or a simple rule already makes the decision well</button>
+      <p class="qwhy">A confident forecast of an unforecastable series is worse than none, because someone will act on it. Sometimes the best forecast is no forecast.</p>
+    </div>
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">3 · In the crawl-walk-run roadmap, what must never be skipped?</p>
+      <button class="qopt" type="button">A · Backtesting and beating the naive baseline before advancing to ML</button>
+      <button class="qopt" type="button">B · Buying a vendor product first</button>
+      <button class="qopt" type="button">C · Training a deep model on day one</button>
+      <p class="qwhy">Each step earns the next on a backtest. A model that cannot beat naive on hidden data has not proven its complexity and should not advance.</p>
+    </div>
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Leader track cheat sheet - the wrap <span>· pin this</span></h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>Match the horizon</b><span>start from the decision; further out = wider interval. Both over- and under-forecasting cost money.</span></div>
+      <div class="cheat-item"><b>Leakage</b><span>peeking at the future. Great on paper, poor live. Ask: split strictly by time?</span></div>
+      <div class="cheat-item"><b>Over-fitting</b><span>nails history, misses the future. Ask: does it beat naive on a backtest?</span></div>
+      <div class="cheat-item"><b>Ignoring the interval</b><span>one confident number, no range. Ask: what is the interval, does it cover?</span></div>
+      <div class="cheat-item"><b>Chasing accuracy</b><span>effort past business value. Ask: would a better number change the call?</span></div>
+      <div class="cheat-item"><b>Cold-start</b><span>no history? Lean on analogs, hierarchy, or judgement - with a wide interval.</span></div>
+      <div class="cheat-item"><b>When NOT to forecast</b><span>too little data, a regime change, or a simple rule is enough. Honesty beats a confident guess.</span></div>
+      <div class="cheat-item"><b>Crawl-walk-run</b><span>baseline → ETS/Prophet → backtest + intervals → ML/ensemble → monitored loop.</span></div>
+      <div class="cheat-item"><b>Build vs buy</b><span>buy if it's not your edge; build if it's core. Either way you own the honesty checks.</span></div>
+      <div class="cheat-item"><b>Leader track complete</b><span>you now know what to ask, what to trust, and what to leave alone. 🎯</span></div>
+    </div>
+  </section>
+
+  <footer class="pagefoot">
+    <span>Leader session 6 of 6 · learn-timeseries-forecasting-with-phoebe · by Phoebe Fu &nbsp;·&nbsp; 📚 <a href="https://phoebefu6.github.io/learn-with-phoebe/">Learn with Phoebe ↗</a></span>
+    <span><a href="a5-measuring-forecasts.html">← Previous: Measuring a forecast</a> &nbsp;·&nbsp; <a href="b1-forecasting-foundations.html">Cross to the Builder track: Forecasting foundations →</a></span>
+  </footer>
+
+</main>
+
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

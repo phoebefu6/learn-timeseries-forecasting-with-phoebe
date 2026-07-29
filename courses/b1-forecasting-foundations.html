@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Builder session 1 · Forecasting foundations - learn timeseries forecasting with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-timeseries-forecasting-with-phoebe</a> / Builder session 1 of 10</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn Timeseries Forecasting with Phoebe · Builder track · Session 1 of 10</div>
+    <h1>Forecasting foundations: <span class="accent">the series, the split, the baseline</span></h1>
+    <p class="sub">Every forecast, from next week's web traffic to next quarter's demand, starts from one object: a value indexed by time. This session builds that series from our running case - Lumen's daily website sessions - in real pandas, sets up the one split that keeps forecasting honest (by time, never at random), and ships the baseline every fancy model has to beat: the seasonal-naive forecast.</p>
+    <div class="chip-row">
+      <span class="chip level">🟢 Builder track</span>
+      <span class="chip audience">Practitioners: analysts · data scientists · engineers</span>
+      <span class="chip audience">Python 3.10+ · a notebook</span>
+      <span class="chip time">Start here</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Welcome</span>
+      <span class="a2" style="flex:4">3-18 · The series + the split</span>
+      <span class="a3" style="flex:5">18-42 · Build-along: series + baseline</span>
+      <span class="a4" style="flex:1">42-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>How this track works</h2>
+    </div>
+    <p class="lede">Ten hands-on sessions, one running series: <strong>Lumen</strong>, a skincare brand whose website sessions we forecast day by day. You will build the series, then climb the method ladder in real Python - decomposition and baselines, exponential smoothing, ARIMA/SARIMA, Prophet, gradient-boosting, and a look at deep models - then backtest, serve, and monitor it, following one forecast from the analyst's first plot to a monitored production model. Tonight lays the foundation: the data shape, the honest split, and the baseline. A running note: forecasts are uncertain, so we always carry a prediction interval, and we teach the published canon (FPP3, Box-Jenkins, Prophet) honestly.</p>
+    <div class="legend">
+      <span class="pill solid">Live - presented in session</span>
+      <span class="pill light">Self-study - read after class</span>
+      <span class="pill peach">★ Run it now (Python)</span>
+      <span class="pill inkpill">Sources covered (cited)</span>
+    </div>
+    <div class="callout win">
+      <strong>★ What you walk out with today</strong>
+      The Lumen sessions series built on a pandas datetime index and resampled to a clean daily frequency, the time-based train/test split that prevents leakage, the four building blocks of any series (trend, seasonality, cycle, noise), and a working seasonal-naive baseline - the number every model in this course has to beat.
+    </div>
+  </section>
+
+  <!-- ============ PART 1: THE SERIES ============ -->
+  <section class="section" id="series">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers FPP3 foundations</span>
+      <h2>A series is four things stacked together <span class="tag concept">6 min live</span></h2>
+    </div>
+    <p class="lede">Strip away the jargon and any time series is a sum of four parts: a <strong>trend</strong> (the slow drift up or down), <strong>seasonality</strong> (a pattern that repeats on a fixed period - here, a weekly rhythm), a longer <strong>cycle</strong>, and <strong>noise</strong> (the irregular wiggle). Forecasting is the craft of pulling those apart, projecting the ones that persist, and being honest about the one that does not.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A time series decomposed into trend, weekly seasonality, and noise, which sum to the observed line">
+        <style>
+          .b1sT { font: 700 13px Inter, sans-serif; fill: #0F172A; }
+          .b1sX { font: 400 12px Inter, sans-serif; fill: #64748B; }
+          .b1sN { font: 600 13px Inter, sans-serif; fill: #14532D; }
+          .b1sH { font: 700 12px Inter, sans-serif; fill: #FFFFFF; }
+        </style>
+        <text class="b1sT" x="24" y="26">Observed = trend + seasonality + noise</text>
+        <!-- observed -->
+        <rect x="24" y="40" width="150" height="30" rx="6" fill="#14532D"/><text class="b1sH" x="44" y="60">Observed</text>
+        <polyline points="184,58 224,52 264,60 304,44 344,54 384,40 424,50 464,36 504,46 544,32 584,42 624,28" fill="none" stroke="#334155" stroke-width="2.5"/>
+        <text class="b1sX" x="640" y="58">the messy real line</text>
+        <!-- trend -->
+        <rect x="24" y="90" width="150" height="30" rx="6" fill="#16A34A"/><text class="b1sH" x="44" y="110">Trend</text>
+        <polyline points="184,116 624,86" fill="none" stroke="#16A34A" stroke-width="2.5"/>
+        <text class="b1sX" x="640" y="106">slow drift upward</text>
+        <!-- seasonality -->
+        <rect x="24" y="140" width="150" height="30" rx="6" fill="#4ADE80"/><text class="b1sH" x="44" y="160">Seasonality</text>
+        <polyline points="184,158 214,148 244,168 274,158 304,148 334,168 364,158 394,148 424,168 454,158 484,148 514,168 544,158 574,148 604,168 624,158" fill="none" stroke="#4ADE80" stroke-width="2.5"/>
+        <text class="b1sX" x="640" y="160">repeats every week</text>
+        <!-- noise -->
+        <rect x="24" y="190" width="150" height="30" rx="6" fill="#CBD5E1"/><text class="b1sT" x="44" y="210">Noise</text>
+        <polyline points="184,208 214,202 244,212 274,200 304,210 334,204 364,214 394,201 424,209 454,205 484,213 514,202 544,210 574,206 604,212 624,204" fill="none" stroke="#94A3B8" stroke-width="1.5"/>
+        <text class="b1sX" x="640" y="210">irregular, unforecastable</text>
+        <rect x="24" y="252" width="14" height="14" rx="3" fill="#16A34A"/>
+        <text class="b1sN" x="46" y="264">Every method in this course is a different way to separate the signal (trend + seasonality) from the noise.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - a series is trend + seasonality + noise, stacked</figcaption>
+    </figure>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>Frequency, index, and the gaps that break everything<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Before any model, the series has to be clean and regular:</p>
+        <ul>
+          <li><strong>A real datetime index</strong> - not strings. pandas needs to know Tuesday follows Monday, so it can resample, shift, and roll.</li>
+          <li><strong>One fixed frequency</strong> - daily, weekly, hourly. Raw logs are irregular; you <code>resample</code> to a grid first.</li>
+          <li><strong>No silent gaps</strong> - a missing day is not a zero. Decide explicitly: fill, interpolate, or flag. A gap treated as zero will wreck seasonality.</li>
+        </ul>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p><strong>Frequency is a modelling choice, not a given.</strong> Lumen's raw analytics arrive per-session with timestamps. Forecasting daily sessions means resampling those events to a daily count first. Choose the frequency that matches the decision: daily for staffing, weekly for planning. The wrong frequency hides the very pattern you need.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Build the Lumen series on a datetime index (pandas)<span class="mini">2 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Raw event logs are irregular. A <code>resample</code> turns them into a clean daily series:</p>
+        <div class="prompt-box good"><span class="label">★ Run it now (Python) - events to a daily series</span>import pandas as pd, numpy as np
+
+# Lumen web analytics: one row per session, with a timestamp
+rng = pd.date_range("2026-01-01", periods=20000, freq="17min")
+events = pd.DataFrame({"ts": rng, "session": 1})
+
+# collapse to a clean DAILY series on a real datetime index
+s = (events.set_index("ts")["session"]
+           .resample("D").sum()
+           .asfreq("D"))            # explicit daily frequency, no gaps
+print(s.head())
+print("freq:", s.index.freq, "| missing days:", s.isna().sum())</div>
+        <p>That <code>s</code> - a value per day on a datetime index - is the input to every model from here.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2: THE SPLIT ============ -->
+  <section class="section" id="split">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers FPP3 evaluation setup</span>
+      <h2>Split by time, never at random <span class="tag concept">5 min live</span></h2>
+    </div>
+    <p class="lede">The single most common forecasting bug is a random train/test split. Time only runs one way: you must train on the past and test on the future. Shuffle the rows and you leak tomorrow into today - your accuracy looks great and collapses in production.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 250" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A time-based split keeps train before test; a random split leaks future into past and is wrong">
+        <style>
+          .b1pT { font: 700 14px Inter, sans-serif; fill: #FFFFFF; }
+          .b1pI { font: 700 13px Inter, sans-serif; fill: #0F172A; }
+          .b1pX { font: 400 12px Inter, sans-serif; fill: #64748B; }
+          .b1pN { font: 600 13px Inter, sans-serif; fill: #14532D; }
+          .b1pB { font: 700 13px Inter, sans-serif; fill: #991B1B; }
+        </style>
+        <text class="b1pI" x="24" y="30">Right: split by time</text>
+        <rect x="24" y="44" width="560" height="40" rx="8" fill="#334155"/><text class="b1pT" x="230" y="69">Train (the past)</text>
+        <rect x="588" y="44" width="268" height="40" rx="8" fill="#16A34A"/><text class="b1pT" x="640" y="69">Test (the future)</text>
+        <text class="b1pX" x="24" y="104">Everything in test comes strictly after everything in train. This is how it will run live.</text>
+
+        <text class="b1pB" x="24" y="150">Wrong: split at random</text>
+        <g>
+          <rect x="24" y="164" width="70" height="40" rx="8" fill="#16A34A"/>
+          <rect x="100" y="164" width="70" height="40" rx="8" fill="#334155"/>
+          <rect x="176" y="164" width="70" height="40" rx="8" fill="#16A34A"/>
+          <rect x="252" y="164" width="70" height="40" rx="8" fill="#334155"/>
+          <rect x="328" y="164" width="70" height="40" rx="8" fill="#334155"/>
+          <rect x="404" y="164" width="70" height="40" rx="8" fill="#16A34A"/>
+          <rect x="480" y="164" width="70" height="40" rx="8" fill="#334155"/>
+          <rect x="556" y="164" width="70" height="40" rx="8" fill="#16A34A"/>
+        </g>
+        <text class="b1pX" x="644" y="189">test dates scattered</text>
+        <rect x="24" y="220" width="14" height="14" rx="3" fill="#991B1B"/>
+        <text class="b1pN" x="46" y="232">A shuffled split lets the model peek at the future. It scores high, then fails live. Always split by time.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - train on the past, test on the future</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Holdout, and why a single split is only the start<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>A simple time holdout is enough to begin: keep the last N periods as the test set and never look at them while modelling.</p>
+        <ul>
+          <li><strong>Holdout length = your real horizon.</strong> If you forecast 14 days ahead, hold out 14 days and score there.</li>
+          <li><strong>One split is noisy.</strong> A single holdout can flatter or punish a model by luck. In b8 you will upgrade to rolling-origin backtesting - many splits marched forward through time.</li>
+          <li><strong>Never tune on the test set.</strong> If you pick a model by peeking at test, you have leaked. Use a validation slice or backtest.</li>
+        </ul>
+        <div class="callout tip">
+          <strong>The horizon shapes everything</strong>
+          A 7-day and a 90-day forecast are different problems with different best models and different uncertainty. Decide the horizon before you model, and evaluate at exactly that horizon.
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ DEMO 1 ============ -->
+  <section class="section" id="demo-1">
+    <div class="section-kicker">
+      <span class="klabel">Demo 1 of 2</span>
+      <h2>Build the series and split it by time <span class="tag demo">★ 12 min · everyone builds</span></h2>
+    </div>
+    <p class="lede">Turn Lumen's daily sessions into a clean series and carve off an honest holdout.</p>
+
+    <div class="steps">
+      <div class="step"><p>Load or build a daily series on a datetime index (use the sample below, or export your own non-confidential daily counts to CSV).</p></div>
+      <div class="step"><p>Resample to a fixed daily frequency and confirm there are no missing days.</p></div>
+      <div class="step"><p>Split by time: last 14 days as the test set, everything before as train. Print the two date ranges to prove test comes after train.</p></div>
+      <div class="step"><p>Plot it. Eyeball the trend and the weekly rhythm before you model anything.</p></div>
+    </div>
+
+    <div class="prompt-box good"><span class="label">★ Run it now (Python) - daily series + time split</span>import pandas as pd, numpy as np
+
+# a Lumen-style daily sessions series: trend + weekly seasonality + noise
+idx = pd.date_range("2026-01-01", periods=112, freq="D")
+season = np.array([40,55,60,50,30,-120,-140])          # weekday shape
+i = np.arange(112)
+y = 1000 + 2.5*i + season[i % 7] + 14*np.sin(i*1.7) + 9*np.cos(i*0.6)
+s = pd.Series(np.round(y), index=idx, name="sessions")
+
+H = 14                                                   # forecast horizon
+train, test = s.iloc[:-H], s.iloc[-H:]
+print("train:", train.index.min().date(), "->", train.index.max().date())
+print("test :", test.index.min().date(),  "->", test.index.max().date())
+assert train.index.max() &lt; test.index.min()             # no leakage</div>
+
+    <div class="callout tip">
+      <strong>Plot first, model second</strong>
+      Half of forecasting is looking. Before any model, plot the series and its weekly and monthly averages. The trend, the seasonal period, and the outliers are usually visible to the eye - and they tell you which method on the ladder to reach for.
+    </div>
+  </section>
+
+  <!-- ============ DEMO 2 ============ -->
+  <section class="section" id="demo-2">
+    <div class="section-kicker">
+      <span class="klabel">Demo 2 of 2</span>
+      <h2>Ship the seasonal-naive baseline <span class="tag demo">★ 8 min · build your own</span></h2>
+    </div>
+    <p class="lede">Before any clever model, build the baseline it has to beat. For a weekly-seasonal series the honest baseline is seasonal-naive: tomorrow equals the same weekday last week. It is two lines, and on seasonal data it is shockingly hard to beat - which is exactly why you measure against it.</p>
+
+    <div class="steps">
+      <div class="step"><p>Forecast each future day as the value from 7 days earlier (the last observed same weekday).</p></div>
+      <div class="step"><p>Score it on the holdout with MAPE (mean absolute percentage error).</p></div>
+      <div class="step"><p>Keep it - in b8 you will measure every model against this line, and in b3 you will watch Holt-Winters leave it behind.</p></div>
+    </div>
+
+    <div class="prompt-box good"><span class="label">★ Run it now (Python) - seasonal-naive baseline</span>m = 7                                        # weekly seasonality
+history = train.copy()
+preds = []
+for step in range(H):
+    preds.append(history.iloc[-m + (step % m)])   # same weekday last cycle
+fc = pd.Series(preds, index=test.index)
+
+mape = (np.abs(test.values - fc.values) / test.values).mean() * 100
+print(f"seasonal-naive MAPE: {mape:.1f}%   (the line every model must beat)")</div>
+
+    <div class="callout example">
+      <span class="ex-pill">Real world</span>
+      <p><strong>Never skip the baseline.</strong> The M-competitions - the field's biggest empirical bake-offs - show again and again that simple methods and their combinations are extremely hard to beat. If your ARIMA or neural net cannot beat seasonal-naive on a backtest (b8), it is not earning its complexity. The baseline is also your fallback when a fancy model breaks in production.</p>
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Try it yourself - this week <span class="tag exercise">◐ 30-45 min total</span></h2>
+    </div>
+    <ul>
+      <li>Build a daily series from a real (non-confidential) export - web sessions, orders, tickets - on a datetime index, and resample to a clean daily frequency.</li>
+      <li>Plot it. Name the trend, the seasonal period, and any outliers by eye before modelling.</li>
+      <li>Split by time (hold out your real horizon) and ship the seasonal-naive baseline. Record its MAPE.</li>
+      <li>Write one sentence: what frequency and horizon does your actual decision need?</li>
+      <li>Optional: skim FPP3 chapters 2-3 (Hyndman &amp; Athanasopoulos) - the open textbook this track follows.</li>
+    </ul>
+  </section>
+
+  <!-- ============ SOURCES ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Source material</span>
+      <h2>Sources covered (cited)</h2>
+    </div>
+    <p class="lede">Taught from the forecasting canon and the published empirical evidence. This session covers:</p>
+    <div class="covered">
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Forecasting: Principles and Practice, 3rd ed (Hyndman &amp; Athanasopoulos, FPP3)</span><span class="note">Parts 1-2 · the components of a series, frequency, the honest split</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">M-competitions (Makridakis, M4/M5)</span><span class="note">Demo 2 · why a simple baseline is hard to beat</span></div>
+    </div>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions before you go 🎯 <span class="tag exercise">◐ 90 seconds</span></h2>
+    </div>
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">1 · What are the building blocks of a time series?</p>
+      <button class="qopt" type="button">A · Rows and columns</button>
+      <button class="qopt" type="button">B · Trend, seasonality, cycle, and noise</button>
+      <button class="qopt" type="button">C · Mean and variance only</button>
+      <p class="qwhy">A series is a sum of a slow trend, a repeating seasonality, a longer cycle, and irregular noise. Forecasting separates the persistent signal from the unforecastable noise.</p>
+    </div>
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">2 · Why must a time series be split by time, not at random?</p>
+      <button class="qopt" type="button">A · It is faster to compute</button>
+      <button class="qopt" type="button">B · Random splits use less memory</button>
+      <button class="qopt" type="button">C · A random split leaks future information into training, so accuracy looks great then fails live</button>
+      <p class="qwhy">Time runs one way. Train on the past, test on the future. Shuffling lets the model peek at the future - the accuracy is a mirage.</p>
+    </div>
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">3 · Why build the seasonal-naive baseline first?</p>
+      <button class="qopt" type="button">A · It is the honest line every model must beat, and the fallback when a model breaks</button>
+      <button class="qopt" type="button">B · It is the most accurate forecaster</button>
+      <button class="qopt" type="button">C · It removes the need for a train/test split</button>
+      <p class="qwhy">On seasonal data, "same weekday last week" is surprisingly strong. If a complex model cannot beat it on a backtest (b8), it is not earning its complexity.</p>
+    </div>
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Builder session 1 cheat sheet <span>· pin this</span></h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>A series = 4 parts</b><span>trend + seasonality + cycle + noise. Forecasting projects the signal, not the noise.</span></div>
+      <div class="cheat-item"><b>Datetime index</b><span>real timestamps, one fixed frequency (resample), no silent gaps. A missing day is not a zero.</span></div>
+      <div class="cheat-item"><b>Split by time</b><span>train on the past, test on the future. Never shuffle - it leaks the future and flatters the score.</span></div>
+      <div class="cheat-item"><b>Holdout = horizon</b><span>hold out exactly as many periods as you will forecast, and score there.</span></div>
+      <div class="cheat-item"><b>Plot first</b><span>the trend, seasonal period, and outliers are usually visible before you model.</span></div>
+      <div class="cheat-item"><b>Seasonal-naive baseline</b><span>tomorrow = same weekday last week. The line every model must beat + the fallback.</span></div>
+      <div class="cheat-item"><b>MAPE</b><span>mean absolute percentage error - the plain-English accuracy number. Lower is better.</span></div>
+      <div class="cheat-item"><b>Next session</b><span>b2 - decomposition (STL) and the family of baselines (naive, drift, seasonal-naive).</span></div>
+    </div>
+  </section>
+
+  <footer class="pagefoot">
+    <span>Builder session 1 of 10 · learn-timeseries-forecasting-with-phoebe · by Phoebe Fu &nbsp;·&nbsp; 📚 <a href="https://phoebefu6.github.io/learn-with-phoebe/">Learn with Phoebe ↗</a></span>
+    <span><a href="../index.html">← All sessions</a> &nbsp;·&nbsp; <a href="b2-decomposition-baselines.html">Next: Decomposition &amp; baselines →</a></span>
+  </footer>
+
+</main>
+
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

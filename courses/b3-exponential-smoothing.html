@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Builder session 3 · Exponential smoothing &amp; ETS - learn timeseries forecasting with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+<style>
+  /* ---- live forecaster (forecast-live.js) ---- */
+  .fl-shell { border: 1px solid #E2E8F0; border-radius: 16px; padding: 20px; background: #FFFFFF; box-shadow: 0 10px 30px rgba(15,23,42,.06); }
+  .fl-top { display: flex; flex-wrap: wrap; gap: 22px; margin-bottom: 16px; }
+  .fl-ctrl { display: flex; flex-direction: column; gap: 8px; }
+  .fl-clabel { font: 700 12px Inter, sans-serif; color: #64748B; text-transform: uppercase; letter-spacing: .04em; }
+  .fl-methods, .fl-horizons { display: flex; flex-wrap: wrap; gap: 8px; }
+  .fl-btn { font: 600 13px Inter, sans-serif; padding: 8px 14px; border-radius: 999px; border: 1px solid #CBD5E1; background: #F6FBF7; color: #0F172A; cursor: pointer; transition: all .15s; }
+  .fl-btn:hover { border-color: #16A34A; }
+  .fl-btn.fl-on { background: #16A34A; color: #FFFFFF; border-color: #16A34A; }
+  .fl-chart { width: 100%; overflow-x: auto; }
+  .fl-chart svg { width: 100%; height: auto; display: block; }
+  .fl-legend { display: flex; flex-wrap: wrap; gap: 18px; margin: 10px 0 4px; font: 500 12.5px Inter, sans-serif; color: #64748B; }
+  .fl-legend span { display: inline-flex; align-items: center; gap: 7px; }
+  .fl-sw { width: 16px; height: 4px; border-radius: 2px; display: inline-block; }
+  .fl-sw.fl-hist { background: #334155; }
+  .fl-sw.fl-act { background: #94A3B8; }
+  .fl-sw.fl-fc { background: #16A34A; height: 5px; }
+  .fl-sw.fl-band { background: #BBF7D0; height: 12px; border-radius: 3px; }
+  .fl-meters { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 16px; align-items: stretch; }
+  .fl-meter { background: #F6FBF7; border: 1px solid #E2E8F0; border-radius: 12px; padding: 12px 16px; display: flex; flex-direction: column; gap: 4px; }
+  .fl-mlabel { font: 600 11.5px Inter, sans-serif; color: #64748B; text-transform: uppercase; letter-spacing: .03em; }
+  .fl-mval { font: 800 26px Inter, sans-serif; color: #0F172A; }
+  .fl-mval.fl-good { color: #16A34A; }
+  .fl-mval.fl-bad { color: #991B1B; }
+  .fl-note { flex: 1; min-width: 240px; justify-content: center; font: 500 13.5px Inter, sans-serif; color: #334155; line-height: 1.6; }
+  .fl-note b { color: #14532D; }
+  .fl-h { color: #64748B; }
+  .fl-rail { margin-top: 14px; font: 400 12.5px Inter, sans-serif; color: #64748B; line-height: 1.7; }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-timeseries-forecasting-with-phoebe</a> / Builder session 3 of 10</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn Timeseries Forecasting with Phoebe · Builder track · Session 3 of 10</div>
+    <h1>Exponential smoothing: <span class="accent">a weighted memory of the past</span></h1>
+    <p class="sub">The first real forecasters on the ladder. Exponential smoothing says the recent past matters more than the distant past, and weights it so. This session builds the ETS family - simple smoothing, Holt's trend, and Holt-Winters seasonality - in real statsmodels on the Lumen series, and hands you a live forecaster where you switch method and horizon and watch the error move.</p>
+    <div class="chip-row">
+      <span class="chip level">🟢 Builder track</span>
+      <span class="chip audience">Practitioners: analysts · data scientists · engineers</span>
+      <span class="chip audience">Python 3.10+ · statsmodels</span>
+      <span class="chip time">45 minutes</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Recap</span>
+      <span class="a2" style="flex:4">3-18 · Smoothing, trend, seasonality</span>
+      <span class="a3" style="flex:5">18-42 · Build-along + the live forecaster</span>
+      <span class="a4" style="flex:1">42-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>From baselines to a real model</h2>
+    </div>
+    <p class="lede">In b2 you shipped the baselines - naive, drift, seasonal-naive - and decomposed the Lumen series. Tonight you climb one rung: exponential smoothing, the family that quietly powers a huge share of real business forecasts because it is fast, robust, and needs little data. You will build all three members (level, then trend, then seasonality) and, at the end, drive a live forecaster that computes their accuracy in front of you.</p>
+    <div class="legend">
+      <span class="pill solid">Live - presented in session</span>
+      <span class="pill light">Self-study - read after class</span>
+      <span class="pill peach">★ Run it now (Python)</span>
+      <span class="pill inkpill">Sources covered (cited)</span>
+    </div>
+    <div class="callout win">
+      <strong>★ What you walk out with today</strong>
+      The three ETS models built in statsmodels on Lumen, an intuition for the smoothing parameters (alpha, beta, gamma) as "how fast the model forgets", a prediction interval on every forecast, and a live in-browser forecaster that shows why seasonality-aware smoothing beats the flat baseline.
+    </div>
+  </section>
+
+  <!-- ============ PART 1: THE SMOOTHING IDEA ============ -->
+  <section class="section" id="idea">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers FPP3 ch.8</span>
+      <h2>Recent past matters more <span class="tag concept">6 min live</span></h2>
+    </div>
+    <p class="lede">A moving average treats the last 7 days as equally important and everything older as worthless. Exponential smoothing is smarter: every past point counts, but its weight decays geometrically as it recedes. One parameter, alpha, sets how fast the memory fades - high alpha reacts quickly, low alpha is steady.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Exponential smoothing weights: the most recent observation gets the most weight, decaying geometrically into the past">
+        <style>
+          .b3iT { font: 700 13px Inter, sans-serif; fill: #0F172A; }
+          .b3iX { font: 400 12px Inter, sans-serif; fill: #64748B; }
+          .b3iN { font: 600 13px Inter, sans-serif; fill: #14532D; }
+          .b3iH { font: 700 11px Inter, sans-serif; fill: #FFFFFF; }
+        </style>
+        <text class="b3iT" x="24" y="26">Weight given to each past day (alpha = 0.4)</text>
+        <!-- decaying bars: most recent tallest -->
+        <rect x="60"  y="60"  width="60" height="120" rx="5" fill="#16A34A"/><text class="b3iH" x="78" y="76">40%</text>
+        <rect x="140" y="96"  width="60" height="84"  rx="5" fill="#4ADE80"/><text class="b3iH" x="158" y="112">24%</text>
+        <rect x="220" y="122" width="60" height="58"  rx="5" fill="#86EFAC"/><text class="b3iT" x="238" y="138" style="font:700 11px Inter,sans-serif;fill:#14532D">14%</text>
+        <rect x="300" y="140" width="60" height="40"  rx="5" fill="#BBF7D0"/><text class="b3iT" x="320" y="156" style="font:700 11px Inter,sans-serif;fill:#14532D">9%</text>
+        <rect x="380" y="152" width="60" height="28"  rx="5" fill="#DCFCE7"/><text class="b3iT" x="400" y="168" style="font:700 10px Inter,sans-serif;fill:#14532D">5%</text>
+        <rect x="460" y="160" width="60" height="20"  rx="5" fill="#F0FDF4" stroke="#BBF7D0"/>
+        <text class="b3iX" x="470" y="200">today</text>
+        <text class="b3iX" x="392" y="200">← older</text>
+        <line x1="60" y1="184" x2="640" y2="184" stroke="#CBD5E1" stroke-width="1"/>
+        <rect x="620" y="60" width="236" height="96" rx="12" fill="#F0FDF4" stroke="#16A34A"/>
+        <text class="b3iT" x="640" y="88">alpha high = fast memory,</text>
+        <text class="b3iT" x="640" y="108">reacts to recent change.</text>
+        <text class="b3iX" x="640" y="132">alpha low = long memory,</text>
+        <text class="b3iX" x="640" y="150">steady, ignores blips.</text>
+        <rect x="24" y="216" width="14" height="14" rx="3" fill="#16A34A"/>
+        <text class="b3iN" x="46" y="228">The weights sum to 1 and decay by (1 - alpha) each step back. Nothing is thrown away; old news just fades.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - geometrically decaying weights are the whole idea</figcaption>
+    </figure>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>The three members of the ETS family<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>You add one component at a time:</p>
+        <ul>
+          <li><strong>Simple exponential smoothing (SES)</strong> - tracks the <em>level</em> only. Good for a flat, trendless, seasonless series. One parameter: alpha.</li>
+          <li><strong>Holt's linear trend</strong> - adds a smoothed <em>trend</em> term (beta). Now the forecast can slope up or down instead of going flat.</li>
+          <li><strong>Holt-Winters</strong> - adds a smoothed <em>seasonal</em> term (gamma). This is the one that captures Lumen's weekly rhythm - and the one that wins on this data.</li>
+        </ul>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p><strong>ETS is the workhorse.</strong> Exponential smoothing is often the quiet default in retail and operations forecasting: it needs little data, trains in milliseconds, and is hard to beat on short horizons. Many teams ship Holt-Winters and only reach for ARIMA or ML when a backtest proves it earns its keep.</p>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2: THE ETS COMPONENTS ============ -->
+  <section class="section" id="components">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers FPP3 ch.8</span>
+      <h2>Level, trend, and season, each updated <span class="tag concept">5 min live</span></h2>
+    </div>
+    <p class="lede">Holt-Winters keeps three running estimates and nudges each one every day: the level (where we are), the trend (how fast we are moving), and the seasonal offsets (the repeating weekly shape). The forecast is simply level + horizon x trend + the right seasonal offset.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 230" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Holt-Winters combines a level, a trend, and weekly seasonal offsets into a forecast">
+        <style>
+          .b3cT { font: 700 14px Inter, sans-serif; fill: #FFFFFF; }
+          .b3cX { font: 400 11.5px Inter, sans-serif; fill: #DCFCE7; }
+          .b3cI { font: 700 14px Inter, sans-serif; fill: #0F172A; }
+          .b3cXi { font: 400 11.5px Inter, sans-serif; fill: #64748B; }
+          .b3cN { font: 600 13px Inter, sans-serif; fill: #14532D; }
+        </style>
+        <rect x="24" y="40" width="180" height="78" rx="12" fill="#14532D"/>
+        <text class="b3cT" x="44" y="68">Level (alpha)</text>
+        <text class="b3cX" x="44" y="90">where we are now</text>
+        <text class="b3cX" x="44" y="108">smoothed current value</text>
+        <text class="b3cI" x="224" y="84">+</text>
+        <rect x="246" y="40" width="180" height="78" rx="12" fill="#16A34A"/>
+        <text class="b3cT" x="266" y="68">Trend (beta)</text>
+        <text class="b3cX" x="266" y="90">how fast we move</text>
+        <text class="b3cX" x="266" y="108">slope per step</text>
+        <text class="b3cI" x="446" y="84">+</text>
+        <rect x="468" y="40" width="180" height="78" rx="12" fill="#4ADE80"/>
+        <text class="b3cI" x="488" y="68">Season (gamma)</text>
+        <text class="b3cXi" x="488" y="90">weekly offsets</text>
+        <text class="b3cXi" x="488" y="108">7 repeating deltas</text>
+        <text class="b3cI" x="668" y="84">=</text>
+        <rect x="690" y="40" width="166" height="78" rx="12" fill="#F0FDF4" stroke="#16A34A"/>
+        <text class="b3cI" x="710" y="68">Forecast</text>
+        <text class="b3cXi" x="710" y="90">level + h·trend</text>
+        <text class="b3cXi" x="710" y="108">+ season[weekday]</text>
+        <rect x="24" y="150" width="832" height="40" rx="10" fill="#F1F5F9"/>
+        <text class="b3cI" x="44" y="175">Each day, all three are nudged toward the newest observation. The parameters set how fast each one adapts.</text>
+        <rect x="24" y="206" width="14" height="14" rx="3" fill="#16A34A"/>
+        <text class="b3cN" x="46" y="218">Additive when the seasonal swing is roughly constant; multiplicative when it grows with the level.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - Holt-Winters = level + trend + season</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Build all three in statsmodels<span class="mini">2 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>statsmodels' <code>ExponentialSmoothing</code> covers the whole family - you just switch trend and seasonal on:</p>
+        <div class="prompt-box good"><span class="label">★ Run it now (Python) - SES, Holt, Holt-Winters</span>import numpy as np, pandas as pd
+from statsmodels.tsa.holtwinters import SimpleExpSmoothing, ExponentialSmoothing
+
+# train/test from b1 (Lumen daily sessions), H = 14
+# 1) Simple exponential smoothing - level only
+ses = SimpleExpSmoothing(train).fit()
+
+# 2) Holt - level + trend
+holt = ExponentialSmoothing(train, trend="add").fit()
+
+# 3) Holt-Winters - level + trend + weekly seasonality
+hw = ExponentialSmoothing(train, trend="add",
+                          seasonal="add", seasonal_periods=7).fit()
+
+for name, model in [("SES", ses), ("Holt", holt), ("Holt-Winters", hw)]:
+    fc = model.forecast(len(test))
+    mape = (np.abs(test.values - fc.values) / test.values).mean() * 100
+    print(f"{name:13s} MAPE: {mape:5.2f}%")   # HW wins on seasonal data</div>
+        <p>On the Lumen series the ranking is unambiguous: Holt-Winters, which alone captures the weekly season, posts the lowest error.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ DEMO: LIVE FORECASTER ============ -->
+  <section class="section" id="demo-live">
+    <div class="section-kicker">
+      <span class="klabel">Demo · drive it yourself</span>
+      <h2>The live forecaster <span class="tag demo">★ real math in your browser</span></h2>
+    </div>
+    <p class="lede">This is a genuine forecaster, not a mock-up. It computes moving-average, exponential-smoothing, seasonal-naive, and Holt-Winters forecasts on a synthetic Lumen series right here, draws an 80% prediction interval, and scores each on a held-out horizon. Switch the method and the horizon, and watch the MAPE move. Notice the two methods that capture the weekly pattern - seasonal-naive and Holt-Winters - leave the flat baseline far behind.</p>
+
+    <div id="forecast-live"></div>
+
+    <div class="callout tip">
+      <strong>Read the interval, not just the line</strong>
+      A forecast without a prediction interval is a guess with false confidence. See how the green band widens the further out you forecast - uncertainty compounds with the horizon. Reporting that band is as much your job as the point forecast.
+    </div>
+  </section>
+
+  <!-- ============ DEMO 2 ============ -->
+  <section class="section" id="demo-2">
+    <div class="section-kicker">
+      <span class="klabel">Build-along</span>
+      <h2>Forecast Lumen with a prediction interval <span class="tag demo">★ 8 min · build your own</span></h2>
+    </div>
+    <p class="lede">Fit Holt-Winters and report the interval, not just the point.</p>
+
+    <div class="steps">
+      <div class="step"><p>Fit <code>ExponentialSmoothing</code> with additive trend and 7-day seasonality on the train set.</p></div>
+      <div class="step"><p>Forecast the horizon and pull a prediction interval from the model's residual spread.</p></div>
+      <div class="step"><p>Score MAPE on the holdout and compare it to the seasonal-naive baseline from b1.</p></div>
+    </div>
+
+    <div class="prompt-box good"><span class="label">★ Run it now (Python) - Holt-Winters + 80% interval</span>import numpy as np
+from statsmodels.tsa.holtwinters import ExponentialSmoothing
+
+hw = ExponentialSmoothing(train, trend="add",
+                          seasonal="add", seasonal_periods=7).fit()
+fc = hw.forecast(len(test))
+
+# an 80% interval from the in-sample residual spread, widening with horizon
+resid = train - hw.fittedvalues
+sigma = resid.std()
+z = 1.28
+steps = np.arange(1, len(test) + 1)
+lo = fc - z * sigma * np.sqrt(steps)
+hi = fc + z * sigma * np.sqrt(steps)
+
+mape = (np.abs(test.values - fc.values) / test.values).mean() * 100
+print(f"Holt-Winters MAPE: {mape:.2f}%  (beat seasonal-naive from b1?)")
+print("interval widens with horizon:", round(hi.iloc[0]-lo.iloc[0]),
+      "->", round(hi.iloc[-1]-lo.iloc[-1]))</div>
+
+    <div class="callout example">
+      <span class="ex-pill">Real world</span>
+      <p><strong>Simple, but not naive.</strong> Exponential smoothing has a formal statistical form (the ETS state-space models in FPP3) that produces principled prediction intervals and can auto-select the best trend/season combination. That is why it remains a first-line production method - you get calibrated uncertainty almost for free.</p>
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Try it yourself - this week <span class="tag exercise">◐ 30-45 min total</span></h2>
+    </div>
+    <ul>
+      <li>Fit SES, Holt, and Holt-Winters on your own daily series and rank them by holdout MAPE.</li>
+      <li>Vary alpha by hand (0.1 vs 0.8) and watch how twitchy vs steady the forecast becomes.</li>
+      <li>Report an 80% prediction interval, not just a point, and sanity-check that it widens with the horizon.</li>
+      <li>Compare your best ETS model to the seasonal-naive baseline. Did it earn its complexity?</li>
+      <li>Optional: read FPP3 chapter 8 (exponential smoothing) for the state-space ETS formulation.</li>
+    </ul>
+  </section>
+
+  <!-- ============ SOURCES ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Source material</span>
+      <h2>Sources covered (cited)</h2>
+    </div>
+    <p class="lede">Taught from the forecasting canon. This session covers:</p>
+    <div class="covered">
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Forecasting: Principles and Practice, 3rd ed - ch.8 exponential smoothing (Hyndman &amp; Athanasopoulos)</span><span class="note">Parts 1-2 · SES, Holt, Holt-Winters, ETS state-space intervals</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">M-competitions (Makridakis)</span><span class="note">Demo · why smoothing remains a strong first-line method</span></div>
+    </div>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions before you go 🎯 <span class="tag exercise">◐ 90 seconds</span></h2>
+    </div>
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">1 · What does the alpha parameter in exponential smoothing control?</p>
+      <button class="qopt" type="button">A · The length of the forecast horizon</button>
+      <button class="qopt" type="button">B · How fast the model forgets - high alpha reacts to recent change, low alpha is steady</button>
+      <button class="qopt" type="button">C · The number of seasonal periods</button>
+      <p class="qwhy">Alpha sets the decay of the weights. High alpha weights the recent past heavily (twitchy); low alpha spreads weight further back (steady).</p>
+    </div>
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">2 · Which ETS member captures a weekly pattern?</p>
+      <button class="qopt" type="button">A · Simple exponential smoothing (SES)</button>
+      <button class="qopt" type="button">B · Holt's linear trend</button>
+      <button class="qopt" type="button">C · Holt-Winters (it adds a seasonal component)</button>
+      <p class="qwhy">SES tracks level only; Holt adds trend; Holt-Winters adds the seasonal term (gamma) that models the repeating weekly offsets.</p>
+    </div>
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">3 · Why report a prediction interval with the forecast?</p>
+      <button class="qopt" type="button">A · A point forecast alone hides uncertainty; the interval shows how confident to be, and it widens with horizon</button>
+      <button class="qopt" type="button">B · Intervals make the model train faster</button>
+      <button class="qopt" type="button">C · Intervals remove the need for a baseline</button>
+      <p class="qwhy">Forecasts are uncertain. The interval communicates that honestly, and it should widen further out because uncertainty compounds with the horizon.</p>
+    </div>
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Builder session 3 cheat sheet <span>· pin this</span></h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>Exponential smoothing</b><span>every past point counts, weighted by geometric decay. Nothing is thrown away; old news fades.</span></div>
+      <div class="cheat-item"><b>alpha / beta / gamma</b><span>smooth the level / trend / season. Each sets how fast that component adapts.</span></div>
+      <div class="cheat-item"><b>SES</b><span>level only. Flat, trendless, seasonless series.</span></div>
+      <div class="cheat-item"><b>Holt</b><span>level + trend. Forecast can slope.</span></div>
+      <div class="cheat-item"><b>Holt-Winters</b><span>level + trend + season. Captures the weekly rhythm - wins on Lumen.</span></div>
+      <div class="cheat-item"><b>Additive vs multiplicative</b><span>additive when the seasonal swing is constant; multiplicative when it grows with the level.</span></div>
+      <div class="cheat-item"><b>Always an interval</b><span>report the 80% band, and expect it to widen with the horizon.</span></div>
+      <div class="cheat-item"><b>Next session</b><span>b4 - ARIMA / SARIMA: stationarity, differencing, ACF/PACF, and model orders.</span></div>
+    </div>
+  </section>
+
+  <footer class="pagefoot">
+    <span>Builder session 3 of 10 · learn-timeseries-forecasting-with-phoebe · by Phoebe Fu &nbsp;·&nbsp; 📚 <a href="https://phoebefu6.github.io/learn-with-phoebe/">Learn with Phoebe ↗</a></span>
+    <span><a href="b2-decomposition-baselines.html">← Prev: Decomposition &amp; baselines</a> &nbsp;·&nbsp; <a href="b4-arima-sarima.html">Next: ARIMA &amp; SARIMA →</a></span>
+  </footer>
+
+</main>
+
+<script src="../assets/app.js?v=1"></script>
+<script src="../assets/forecast-live.js?v=1"></script>
+</body>
+</html>

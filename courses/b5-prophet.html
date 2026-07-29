@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Builder session 5 · Prophet - learn timeseries forecasting with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-timeseries-forecasting-with-phoebe</a> / Builder session 5 of 10</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn Timeseries Forecasting with Phoebe · Builder track · Session 5 of 10</div>
+    <h1>Prophet: <span class="accent">decomposable, analyst-friendly forecasting</span></h1>
+    <p class="sub">ARIMA asks you to think in differences and lags. Prophet asks a simpler question: what is the trend, what repeats, and what are the known special days? It models a series as an additive stack - trend + seasonality + holidays + error - fits automatic changepoints and Fourier seasonality, and hands back an uncertainty band for free. Tonight we fit it on the Lumen sessions series, read its parts, teach it a Lumen sale day, and hold it honest against the b1 baseline.</p>
+    <div class="chip-row">
+      <span class="chip level">🟡 Builder track</span>
+      <span class="chip audience">Practitioners: analysts · data scientists · engineers</span>
+      <span class="chip audience">Python 3.10+ · a notebook</span>
+      <span class="chip time">~45 min</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Recap</span>
+      <span class="a2" style="flex:4">3-18 · The additive model</span>
+      <span class="a3" style="flex:5">18-42 · Build-along: fit + components + holidays</span>
+      <span class="a4" style="flex:1">42-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>Where Prophet sits on the ladder</h2>
+    </div>
+    <p class="lede">We have climbed from baselines (b2) through exponential smoothing (b3) to ARIMA/SARIMA (b4). Prophet, from Facebook's Taylor &amp; Letham, takes a different path: instead of modelling the autocorrelation structure, it fits a <strong>decomposable curve</strong> - a trend, one or more seasonal cycles, and a holiday effect - and adds them up. It is fast to a good result, forgiving of missing data and outliers, and every part is something an analyst can read and explain. The trade: it is a curve-fitter, not automatically the most accurate model. So we do the same thing we do to every model in this course - we backtest it against the baseline before we trust it.</p>
+    <div class="legend">
+      <span class="pill solid">Live - presented in session</span>
+      <span class="pill light">Self-study - read after class</span>
+      <span class="pill peach">★ Run it now (Python)</span>
+      <span class="pill inkpill">Sources covered (cited)</span>
+    </div>
+    <div class="callout win">
+      <strong>★ What you walk out with today</strong>
+      The Lumen series reshaped into Prophet's <code>ds</code>/<code>y</code> frame, a fitted model with a forecast for the next H days plus its <code>yhat_lower</code>/<code>yhat_upper</code> interval, the decomposed trend and weekly components read straight off <code>plot_components</code>, a holidays table that teaches the model about a Lumen sale day, and a backtested MAPE you can set beside the b1 seasonal-naive baseline.
+    </div>
+  </section>
+
+  <!-- ============ PART 1: THE ADDITIVE MODEL ============ -->
+  <section class="section" id="model">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers Taylor &amp; Letham 2018</span>
+      <h2>A forecast built from readable parts <span class="tag concept">6 min live</span></h2>
+    </div>
+    <p class="lede">Prophet writes the series as <strong>y(t) = g(t) + s(t) + h(t) + &epsilon;</strong>: a trend <strong>g</strong>, seasonality <strong>s</strong>, holidays <strong>h</strong>, and an error term. Each part is estimated and then stacked back together. Because the pieces are additive, you can plot each one on its own and say exactly why the forecast bends where it does - that interpretability is the whole selling point.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Prophet stacks a trend with changepoints, a weekly seasonality, and a holiday effect to build the forecast with an uncertainty band">
+        <style>
+          .b5sT { font: 700 13px Inter, sans-serif; fill: #0F172A; }
+          .b5sX { font: 400 12px Inter, sans-serif; fill: #64748B; }
+          .b5sN { font: 600 13px Inter, sans-serif; fill: #14532D; }
+          .b5sH { font: 700 12px Inter, sans-serif; fill: #FFFFFF; }
+          .b5sD { font: 700 12px Inter, sans-serif; fill: #0F172A; }
+        </style>
+        <text class="b5sT" x="24" y="26">y(t) = trend + seasonality + holidays + error</text>
+        <!-- trend with changepoints -->
+        <rect x="24" y="42" width="150" height="30" rx="6" fill="#16A34A"/><text class="b5sH" x="44" y="62">Trend g(t)</text>
+        <polyline points="192,66 330,58 480,50 624,38" fill="none" stroke="#16A34A" stroke-width="2.5"/>
+        <circle cx="330" cy="58" r="4" fill="#14532D"/><circle cx="480" cy="50" r="4" fill="#14532D"/>
+        <text class="b5sX" x="640" y="58">bends at changepoints</text>
+        <!-- seasonality -->
+        <rect x="24" y="92" width="150" height="30" rx="6" fill="#4ADE80"/><text class="b5sH" x="44" y="112">Season s(t)</text>
+        <polyline points="192,110 222,100 252,120 282,110 312,100 342,120 372,110 402,100 432,120 462,110 492,100 522,120 552,110 582,100 612,120 624,110" fill="none" stroke="#4ADE80" stroke-width="2.5"/>
+        <text class="b5sX" x="640" y="112">weekly Fourier terms</text>
+        <!-- holidays -->
+        <rect x="24" y="142" width="150" height="30" rx="6" fill="#334155"/><text class="b5sH" x="44" y="162">Holidays h(t)</text>
+        <polyline points="192,166 300,166 300,146 320,146 320,166 470,166 470,150 490,150 490,166 624,166" fill="none" stroke="#334155" stroke-width="2"/>
+        <text class="b5sX" x="640" y="162">spikes on known days</text>
+        <!-- equals forecast with band -->
+        <rect x="24" y="196" width="150" height="40" rx="6" fill="#14532D"/><text class="b5sH" x="44" y="221">= Forecast</text>
+        <polygon points="192,224 330,214 480,200 624,180 624,208 480,228 330,242 192,252" fill="#BBF7D0"/>
+        <polyline points="192,238 330,228 480,214 624,194" fill="none" stroke="#16A34A" stroke-width="2.5"/>
+        <text class="b5sX" x="640" y="216">yhat + interval</text>
+        <rect x="24" y="270" width="14" height="14" rx="3" fill="#16A34A"/>
+        <text class="b5sN" x="46" y="282">Each part is estimated, then summed - read the trend, the weekly rhythm, and holidays on their own.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - Prophet = trend + seasonality + holidays, stacked into a forecast with a band</figcaption>
+    </figure>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>The four parts, one at a time<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <ul>
+          <li><strong>Trend g(t)</strong> - a piecewise-linear (or logistic) growth curve. Prophet places <em>changepoints</em> automatically and lets the slope shift at each, so a series that speeds up or flattens is captured without you naming the dates.</li>
+          <li><strong>Seasonality s(t)</strong> - repeating cycles built from Fourier terms (sines and cosines). Weekly and yearly are the defaults; each is a smooth periodic curve, not a lookup table.</li>
+          <li><strong>Holidays h(t)</strong> - a table of known special days (sales, launches, public holidays) that get their own effect, with optional windows around them.</li>
+          <li><strong>Error &epsilon;</strong> - the irregular part Prophet does not try to predict, which drives the width of the uncertainty interval.</li>
+        </ul>
+        <div class="callout tip">
+          <strong>Interpretability is the feature</strong>
+          Because the model is additive, <code>plot_components</code> shows you the trend, the weekly shape, and the holiday bumps as separate panels. When a stakeholder asks "why does the forecast dip on Saturdays?", you point at the weekly panel. That explain-ability is why analyst teams reach for Prophet first.
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Strengths, cautions, and when to reach for it<span class="mini">2 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Prophet earns its popularity, but it is a tool with a shape:</p>
+        <ul>
+          <li><strong>Strengths</strong> - fast to a good result, handles missing days and outliers gracefully, needs little tuning, and produces interpretable components plus an interval out of the box.</li>
+          <li><strong>Cautions</strong> - it is fundamentally a curve-fitter. It does not model autocorrelation the way ARIMA does, and on some series a well-tuned SARIMA or a gradient-boosting model (b6) will beat it. It can also over-fit wiggly trends if you loosen the changepoint prior too far.</li>
+          <li><strong>Reach for it</strong> when you have strong multiple seasonalities, known holiday effects, and want a defensible, explainable forecast quickly - then <strong>backtest it</strong> against the baseline like everything else.</li>
+        </ul>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p><strong>Prophet was built for exactly Lumen's problem.</strong> Taylor &amp; Letham designed it at Facebook for business time series with human-scale seasonality and holiday spikes, forecast by analysts who are not time-series specialists. Lumen's daily sessions - a weekly rhythm plus sale-day spikes - is squarely in that sweet spot.</p>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2: CHANGEPOINTS ============ -->
+  <section class="section" id="changepoints">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers the trend model</span>
+      <h2>Changepoints: where the trend is allowed to bend <span class="tag concept">5 min live</span></h2>
+    </div>
+    <p class="lede">A straight-line trend cannot describe a series that accelerates then plateaus. Prophet solves this by putting a set of candidate <strong>changepoints</strong> along the history and letting the slope change at each. It shrinks most of those changes toward zero, so only the changepoints that really matter bend the line. The result is a flexible-but-not-jumpy trend you can point at.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Observed points with a piecewise-linear trend that changes slope at two detected changepoints marked by dashed lines">
+        <style>
+          .b5cT { font: 700 13px Inter, sans-serif; fill: #0F172A; }
+          .b5cX { font: 400 12px Inter, sans-serif; fill: #64748B; }
+          .b5cN { font: 600 13px Inter, sans-serif; fill: #14532D; }
+          .b5cC { font: 700 11px Inter, sans-serif; fill: #14532D; }
+        </style>
+        <text class="b5cT" x="24" y="28">The trend bends only where the data insists</text>
+        <!-- axis -->
+        <line x1="60" y1="240" x2="840" y2="240" stroke="#CBD5E1" stroke-width="1.5"/>
+        <line x1="60" y1="60" x2="60" y2="240" stroke="#CBD5E1" stroke-width="1.5"/>
+        <!-- changepoint verticals -->
+        <line x1="360" y1="60" x2="360" y2="240" stroke="#86EFAC" stroke-width="1.5" stroke-dasharray="5 5"/>
+        <line x1="600" y1="60" x2="600" y2="240" stroke="#86EFAC" stroke-width="1.5" stroke-dasharray="5 5"/>
+        <text class="b5cC" x="312" y="76">changepoint 1</text>
+        <text class="b5cC" x="552" y="76">changepoint 2</text>
+        <!-- observed dots (slate) -->
+        <g fill="#334155">
+          <circle cx="90" cy="212" r="3"/><circle cx="130" cy="204" r="3"/><circle cx="170" cy="200" r="3"/>
+          <circle cx="210" cy="190" r="3"/><circle cx="250" cy="184" r="3"/><circle cx="300" cy="176" r="3"/>
+          <circle cx="340" cy="170" r="3"/><circle cx="380" cy="156" r="3"/><circle cx="420" cy="142" r="3"/>
+          <circle cx="470" cy="124" r="3"/><circle cx="520" cy="108" r="3"/><circle cx="570" cy="96" r="3"/>
+          <circle cx="610" cy="94" r="3"/><circle cx="660" cy="92" r="3"/><circle cx="710" cy="90" r="3"/>
+          <circle cx="760" cy="88" r="3"/><circle cx="800" cy="86" r="3"/>
+        </g>
+        <!-- piecewise trend (green) -->
+        <polyline points="80,210 360,168 600,96 820,84" fill="none" stroke="#16A34A" stroke-width="3"/>
+        <circle cx="360" cy="168" r="5" fill="#14532D"/><circle cx="600" cy="96" r="5" fill="#14532D"/>
+        <!-- legend -->
+        <rect x="60" y="262" width="14" height="14" rx="3" fill="#334155"/>
+        <text class="b5cX" x="82" y="274">observed sessions</text>
+        <rect x="240" y="262" width="14" height="14" rx="3" fill="#16A34A"/>
+        <text class="b5cX" x="262" y="274">fitted trend</text>
+        <text class="b5cN" x="430" y="274">slope bends only at the changepoints that matter</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - a piecewise-linear trend bends at detected changepoints</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The two knobs you will actually touch<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Prophet is deliberately low-config, but two settings control most of its behaviour:</p>
+        <ul>
+          <li><strong><code>changepoint_prior_scale</code></strong> - how freely the trend may bend. Higher = more flexible (risk of over-fitting); lower = stiffer, smoother trend. This is your first dial when the trend looks too wiggly or too rigid.</li>
+          <li><strong><code>seasonality_mode</code></strong> - <code>"additive"</code> when the weekly swing is a constant size, <code>"multiplicative"</code> when the swing grows with the level (a bigger site has bigger Saturday dips in absolute terms). Same additive-vs-multiplicative call you met in b3.</li>
+          <li><strong><code>interval_width</code></strong> - the coverage of the uncertainty band (default 0.8). Set it to the interval your decision needs, and remember it widens with the horizon.</li>
+        </ul>
+        <div class="callout tip">
+          <strong>Honest by default</strong>
+          Prophet never hands you a bare point forecast - <code>predict</code> always returns <code>yhat</code> with <code>yhat_lower</code> and <code>yhat_upper</code>. Report the band, not just the line. A forecast without an interval is a guess wearing false confidence.
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ DEMO 1 ============ -->
+  <section class="section" id="demo-1">
+    <div class="section-kicker">
+      <span class="klabel">Demo 1 of 2</span>
+      <h2>Reshape, fit, and forecast H days <span class="tag demo">★ 12 min · everyone builds</span></h2>
+    </div>
+    <p class="lede">Prophet has one hard requirement: a dataframe with a <code>ds</code> (datestamp) column and a <code>y</code> (value) column. Reshape the Lumen series into that shape, fit, extend the calendar by H days, and read the forecast plus its interval.</p>
+
+    <div class="steps">
+      <div class="step"><p>Rebuild the Lumen daily series from b1 and keep the training slice (everything but the last H days).</p></div>
+      <div class="step"><p>Reset the index into a two-column frame and rename the columns to <code>ds</code> and <code>y</code>.</p></div>
+      <div class="step"><p>Fit a <code>Prophet</code> model with weekly seasonality on, then <code>make_future_dataframe(periods=H)</code> to extend the calendar.</p></div>
+      <div class="step"><p><code>predict</code>, and read <code>yhat</code>, <code>yhat_lower</code>, <code>yhat_upper</code> for the H forecast days.</p></div>
+    </div>
+
+    <div class="prompt-box good"><span class="label">★ Run it now (Python) - reshape to ds/y, fit, predict</span>import pandas as pd, numpy as np
+from prophet import Prophet
+
+# rebuild the Lumen daily sessions series (from b1): trend + weekly season + noise
+idx = pd.date_range("2026-01-01", periods=112, freq="D")
+season = np.array([40,55,60,50,30,-120,-140])          # weekday shape
+i = np.arange(112)
+y = 1000 + 2.5*i + season[i % 7] + 14*np.sin(i*1.7) + 9*np.cos(i*0.6)
+s = pd.Series(np.round(y), index=idx, name="sessions")
+
+H = 14                                                  # forecast horizon
+train = s.iloc[:-H]
+
+# Prophet wants exactly two columns: ds (datestamp) and y (value)
+df = train.reset_index()
+df.columns = ["ds", "y"]
+
+m = Prophet(weekly_seasonality=True, yearly_seasonality=False,
+            daily_seasonality=False, interval_width=0.9)
+m.fit(df)
+
+future = m.make_future_dataframe(periods=H)             # extend calendar by H days
+forecast = m.predict(future)
+print(forecast[["ds", "yhat", "yhat_lower", "yhat_upper"]].tail(H))</div>
+
+    <div class="callout tip">
+      <strong>Read the band, not just yhat</strong>
+      Those last three columns are the whole point. <code>yhat</code> is the point forecast; <code>yhat_lower</code>/<code>yhat_upper</code> are the 90% interval we asked for with <code>interval_width=0.9</code>. When you plot or hand this off, carry all three - the interval is what makes the forecast honest.
+    </div>
+  </section>
+
+  <!-- ============ DEMO 2 ============ -->
+  <section class="section" id="demo-2">
+    <div class="section-kicker">
+      <span class="klabel">Demo 2 of 2</span>
+      <h2>Read the components, add a holiday, and score it <span class="tag demo">★ 10 min · build your own</span></h2>
+    </div>
+    <p class="lede">First look inside the model with <code>plot_components</code> - the trend and the weekly shape drawn separately. Then teach Prophet about a Lumen sale day with a holidays table, refit, and score its MAPE on the holdout against the b1 seasonal-naive baseline.</p>
+
+    <div class="steps">
+      <div class="step"><p>Call <code>m.plot_components(forecast)</code> to see the trend panel and the weekly-seasonality panel.</p></div>
+      <div class="step"><p>Build a small holidays dataframe for a Lumen sale day, with a one-day spill-over window.</p></div>
+      <div class="step"><p>Refit with <code>holidays=</code>, forecast H days, and compute MAPE on the test slice.</p></div>
+      <div class="step"><p>Compare that MAPE to the seasonal-naive baseline from b1 - did the complexity earn its place?</p></div>
+    </div>
+
+    <div class="prompt-box good"><span class="label">★ Run it now (Python) - components + holidays + MAPE vs baseline</span>import matplotlib.pyplot as plt
+
+# 1) look inside the fitted model: trend + weekly seasonality as separate panels
+m.plot_components(forecast)
+plt.show()
+
+# 2) teach Prophet about Lumen sale days (a known, repeatable event)
+holidays = pd.DataFrame({
+    "holiday": "lumen_sale",
+    "ds": pd.to_datetime(["2026-02-14", "2026-03-28"]),
+    "lower_window": 0,
+    "upper_window": 1,                                   # one spill-over day after
+})
+
+mh = Prophet(weekly_seasonality=True, yearly_seasonality=False,
+             daily_seasonality=False, holidays=holidays, interval_width=0.9)
+mh.fit(df)
+fc = mh.predict(mh.make_future_dataframe(periods=H)).tail(H)
+
+# 3) score on the untouched holdout, same metric as the baseline
+test = s.iloc[-H:]
+mape = (np.abs(test.values - fc["yhat"].values) / test.values).mean() * 100
+print(f"Prophet + holidays MAPE: {mape:.1f}%")
+print("compare to the b1 seasonal-naive baseline - complexity must beat it to ship")</div>
+
+    <div class="callout example">
+      <span class="ex-pill">Real world</span>
+      <p><strong>The holidays table is where domain knowledge enters.</strong> You know Lumen's sale calendar; the model does not. Giving it those dates - with a window for the day-after spill - lets it separate the sale spike from the ordinary weekly rhythm, so the underlying trend stays clean. But the verdict is still the backtest: if Prophet cannot beat seasonal-naive on the holdout, the seasonal-naive line ships and Prophet goes back for tuning. That is the M-competition humility, applied to every model in this course.</p>
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Try it yourself - this week <span class="tag exercise">◐ 30-45 min total</span></h2>
+    </div>
+    <ul>
+      <li>Fit Prophet on your own daily series (the one from b1). Print <code>yhat</code>, <code>yhat_lower</code>, <code>yhat_upper</code> for your real horizon.</li>
+      <li>Run <code>plot_components</code> and write one sentence describing the trend and the weekly shape in plain English.</li>
+      <li>Build a holidays table for the two or three special days you actually know about, refit, and note whether the forecast improved.</li>
+      <li>Score Prophet's MAPE on the holdout and put it in the same table as your seasonal-naive and Holt-Winters (b3) numbers. Which is winning so far?</li>
+      <li>Try one value of <code>changepoint_prior_scale</code> higher and one lower; look at how wiggly the trend becomes.</li>
+      <li>Optional: skim Taylor &amp; Letham (2018), "Forecasting at Scale" - the paper behind the tool.</li>
+    </ul>
+  </section>
+
+  <!-- ============ SOURCES ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Source material</span>
+      <h2>Sources covered (cited)</h2>
+    </div>
+    <p class="lede">Taught from the Prophet paper and the forecasting canon. This session covers:</p>
+    <div class="covered">
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Taylor &amp; Letham (2018), "Forecasting at Scale" (Prophet), The American Statistician 72(1):37-45, DOI 10.1080/00031305.2017.1380080 (PeerJ Preprints 5:e3190, 2017)</span><span class="note">Parts 1-2 + both demos · the additive model, changepoints, Fourier seasonality, holidays, intervals</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">M-competitions (Makridakis, M4/M5)</span><span class="note">Demo 2 · the "beat the baseline or do not ship" discipline</span></div>
+    </div>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions before you go 🎯 <span class="tag exercise">◐ 90 seconds</span></h2>
+    </div>
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">1 · How does Prophet model a series?</p>
+      <button class="qopt" type="button">A · As a random walk with drift</button>
+      <button class="qopt" type="button">B · By differencing until stationary, then fitting lags</button>
+      <button class="qopt" type="button">C · As an additive stack: trend + seasonality + holidays + error</button>
+      <p class="qwhy">Prophet writes y(t) = g(t) + s(t) + h(t) + error. Each part is estimated and summed, which is why the components are individually readable.</p>
+    </div>
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">2 · What are changepoints in Prophet?</p>
+      <button class="qopt" type="button">A · Outliers that get removed before fitting</button>
+      <button class="qopt" type="button">B · Points where the trend is allowed to change slope, placed automatically</button>
+      <button class="qopt" type="button">C · The holidays you supply in a table</button>
+      <p class="qwhy">Prophet puts candidate changepoints along the history and lets the trend slope shift at each, shrinking most toward zero so only the ones that matter bend the line.</p>
+    </div>
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">3 · Prophet gives a fast, interpretable forecast. Do you ship it?</p>
+      <button class="qopt" type="button">A · Not until it beats the seasonal-naive baseline on a backtest</button>
+      <button class="qopt" type="button">B · Yes - it is designed for business series, so it is safe by default</button>
+      <button class="qopt" type="button">C · Yes - the uncertainty interval proves it is accurate</button>
+      <p class="qwhy">Prophet is a curve-fitter, not automatically the most accurate model. The M-competition rule holds: complexity must beat the baseline on a backtest, or the baseline ships.</p>
+    </div>
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Builder session 5 cheat sheet <span>· pin this</span></h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>Prophet model</b><span>y(t) = trend + seasonality + holidays + error. Additive, decomposable, interpretable.</span></div>
+      <div class="cheat-item"><b>ds / y frame</b><span>Prophet needs two columns: ds (datestamp) and y (value). Reshape the series first.</span></div>
+      <div class="cheat-item"><b>Changepoints</b><span>automatic points where the trend slope may bend. Tune with changepoint_prior_scale.</span></div>
+      <div class="cheat-item"><b>Fourier seasonality</b><span>weekly/yearly cycles as smooth sine/cosine terms, not lookup tables.</span></div>
+      <div class="cheat-item"><b>Holidays table</b><span>known special days (sales, launches) with optional windows. Domain knowledge enters here.</span></div>
+      <div class="cheat-item"><b>plot_components</b><span>draws trend + weekly + holiday panels separately - the "why" behind the forecast.</span></div>
+      <div class="cheat-item"><b>Always an interval</b><span>predict returns yhat + yhat_lower + yhat_upper. Report the band; it widens with the horizon.</span></div>
+      <div class="cheat-item"><b>Backtest it</b><span>fast and readable is not the same as accurate. Beat the b1 baseline or it does not ship.</span></div>
+      <div class="cheat-item"><b>Next session</b><span>b6 - ML forecasting: turn the series into a supervised table and let gradient boosting learn it.</span></div>
+    </div>
+  </section>
+
+  <footer class="pagefoot">
+    <span>Builder session 5 of 10 · learn-timeseries-forecasting-with-phoebe · by Phoebe Fu &nbsp;·&nbsp; 📚 <a href="https://phoebefu6.github.io/learn-with-phoebe/">Learn with Phoebe ↗</a></span>
+    <span><a href="b4-arima-sarima.html">← Prev: ARIMA &amp; SARIMA</a> &nbsp;·&nbsp; <a href="b6-ml-forecasting.html">Next: ML forecasting →</a></span>
+  </footer>
+
+</main>
+
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

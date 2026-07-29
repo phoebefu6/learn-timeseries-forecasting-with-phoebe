@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Builder session 9 · Productionizing - learn timeseries forecasting with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-timeseries-forecasting-with-phoebe</a> / Builder session 9 of 10</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn Timeseries Forecasting with Phoebe · Builder track · Session 9 of 10</div>
+    <h1>Productionizing: <span class="accent">from a fitted model to a forecast people use</span></h1>
+    <p class="sub">A backtested model in a notebook is worth nothing until someone acts on its numbers. This session ships the forecast: the retrain-then-serve pattern that makes forecasting a scheduled batch job, a data pipeline that lands each new day cleanly, a store that turns serving into a lookup, and the tiny API the dashboard reads. A great model behind a stale or confusing dashboard delivers zero value - so we treat the handoff as part of the model.</p>
+    <div class="chip-row">
+      <span class="chip level">🟠 Builder track</span>
+      <span class="chip audience">Practitioners: analysts · data scientists · engineers</span>
+      <span class="chip audience">Python 3.10+ · a notebook</span>
+      <span class="chip time">~45 min</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Recap</span>
+      <span class="a2" style="flex:4">3-18 · Batch serving + retrain cadence</span>
+      <span class="a3" style="flex:5">18-42 · Build-along: refit-and-store + API</span>
+      <span class="a4" style="flex:1">42-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>You have a model. Now ship it.</h2>
+    </div>
+    <p class="lede">Sessions b1-b8 took Lumen's daily sessions from a raw series to a backtested model with honest prediction intervals. But the model still lives in your notebook. Production forecasting is almost never a live model behind every page request - it is a <strong>batch job</strong>: refit on a schedule, write the forecast and its interval to a store, and let the business read that store. This session builds exactly that pipeline and the contract that hands it to engineering.</p>
+    <div class="legend">
+      <span class="pill solid">Live - presented in session</span>
+      <span class="pill light">Self-study - read after class</span>
+      <span class="pill peach">★ Run it now (Python)</span>
+      <span class="pill inkpill">Sources covered (cited)</span>
+    </div>
+    <div class="callout win">
+      <strong>★ What you walk out with today</strong>
+      The retrain-then-serve mental model, a scheduled refit-and-store routine that ingests the latest day and writes forecast + interval to a store, a minimal FastAPI endpoint that serves that store as JSON, and a clear DS-to-engineering contract (horizon, granularity, interval) so nobody guesses what the numbers mean.
+    </div>
+  </section>
+
+  <!-- ============ PART 1: BATCH SERVING ============ -->
+  <section class="section" id="batch">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers industry practice</span>
+      <h2>Forecasting is a batch job, not a live model <span class="tag concept">7 min live</span></h2>
+    </div>
+    <p class="lede">A classifier scores each request as it arrives. A forecast does not work that way: the answer for the next 14 days barely changes minute to minute, and recomputing it on every dashboard load is pure waste. The production pattern is <strong>retrain-then-serve</strong> - a scheduled job refits the model as new data lands, writes the forecast and its prediction interval to a store, and serving becomes a cheap lookup. Offline you refit; online you serve.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Batch forecasting architecture: new daily data flows to a scheduled refit, which writes forecast and interval to a store, read by an API and shown on a dashboard">
+        <style>
+          .b9aT { font: 700 13px Inter, sans-serif; fill: #FFFFFF; }
+          .b9aI { font: 700 13px Inter, sans-serif; fill: #0F172A; }
+          .b9aX { font: 400 12px Inter, sans-serif; fill: #64748B; }
+          .b9aN { font: 600 13px Inter, sans-serif; fill: #14532D; }
+          .b9aS { font: 600 11px Inter, sans-serif; fill: #DCFCE7; }
+        </style>
+        <text class="b9aI" x="24" y="26">Offline (scheduled) writes the forecast · Online (fast) only reads it</text>
+
+        <!-- new data -->
+        <rect x="24" y="46" width="150" height="70" rx="10" fill="#334155"/>
+        <text class="b9aT" x="44" y="76">New daily data</text>
+        <text class="b9aS" x="44" y="96">one row lands / day</text>
+
+        <!-- refit -->
+        <rect x="206" y="46" width="160" height="70" rx="10" fill="#16A34A"/>
+        <text class="b9aT" x="226" y="76">Scheduled refit</text>
+        <text class="b9aS" x="226" y="96">ETS / SARIMA, cron</text>
+
+        <!-- store -->
+        <rect x="398" y="46" width="170" height="70" rx="10" fill="#14532D"/>
+        <text class="b9aT" x="418" y="72">Store forecast</text>
+        <text class="b9aS" x="418" y="90">+ interval</text>
+        <text class="b9aS" x="418" y="106">table / parquet / JSON</text>
+
+        <!-- api -->
+        <rect x="600" y="46" width="120" height="70" rx="10" fill="#16A34A"/>
+        <text class="b9aT" x="620" y="76">Forecast API</text>
+        <text class="b9aS" x="620" y="96">/forecast</text>
+
+        <!-- dashboard -->
+        <rect x="752" y="46" width="104" height="70" rx="10" fill="#F0FDF4" stroke="#16A34A" stroke-width="2"/>
+        <text class="b9aI" x="770" y="76">Dashboard</text>
+        <text class="b9aX" x="770" y="96">the business</text>
+
+        <!-- arrows -->
+        <line x1="174" y1="81" x2="204" y2="81" stroke="#CBD5E1" stroke-width="2.5" marker-end="url(#b9aArr)"/>
+        <line x1="366" y1="81" x2="396" y2="81" stroke="#CBD5E1" stroke-width="2.5" marker-end="url(#b9aArr)"/>
+        <line x1="568" y1="81" x2="598" y2="81" stroke="#CBD5E1" stroke-width="2.5" marker-end="url(#b9aArr)"/>
+        <line x1="720" y1="81" x2="750" y2="81" stroke="#CBD5E1" stroke-width="2.5" marker-end="url(#b9aArr)"/>
+        <defs>
+          <marker id="b9aArr" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path d="M0,0 L9,4.5 L0,9 Z" fill="#94A3B8"/>
+          </marker>
+        </defs>
+
+        <!-- split bracket -->
+        <line x1="190" y1="132" x2="382" y2="132" stroke="#16A34A" stroke-width="2"/>
+        <text class="b9aN" x="196" y="150">OFFLINE - runs on a schedule, refits, writes once</text>
+        <line x1="584" y1="132" x2="856" y2="132" stroke="#64748B" stroke-width="2"/>
+        <text class="b9aX" x="590" y="150">ONLINE - a cheap lookup on every dashboard load</text>
+
+        <rect x="24" y="196" width="14" height="14" rx="3" fill="#16A34A"/>
+        <text class="b9aN" x="46" y="208">Serving is a lookup, not a model call - the heavy refit runs once per schedule, away from the user.</text>
+        <text class="b9aX" x="46" y="234">Store the forecast AND its prediction interval - never ship a bare point number to the business.</text>
+        <text class="b9aX" x="46" y="256">The store (a warehouse table here stood in by JSON / parquet) is the single source of truth both API and dashboard read.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - new data → scheduled refit → store → API → dashboard</figcaption>
+    </figure>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>The data pipeline that lands each new day cleanly<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The refit is only as good as the day you feed it. The b1 resample discipline is not a notebook nicety - in production it is the ingest contract:</p>
+        <ul>
+          <li><strong>Land, then resample.</strong> Raw events arrive irregular. The pipeline resamples to the same fixed daily grid the model was trained on - the same frequency, every run.</li>
+          <li><strong>No silent gaps.</strong> A missing day is not a zero. Fill, interpolate, or flag it explicitly, exactly as in b1, before it reaches the model.</li>
+          <li><strong>Idempotent.</strong> Re-running yesterday's job must produce the same series, not a double count. Key on the date.</li>
+        </ul>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p><strong>The stale-data failure is silent.</strong> A model can keep producing plausible forecasts long after the upstream feed broke - it just extrapolates the last good day. The pipeline must check freshness (did today's row actually arrive?) and refuse to serve a forecast built on stale input rather than quietly mislead the business.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Persisting the model vs persisting the forecast<span class="mini">2 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Two things can be saved, and they answer different questions:</p>
+        <ul>
+          <li><strong>The forecast</strong> (values + interval, per date) - this is what the business reads. Persist it every run; it is small and cheap to serve.</li>
+          <li><strong>The fitted model</strong> (its parameters) - persist it if refitting is slow or if you need to reproduce a past forecast for audit. For light models like ETS, refit-from-scratch each run is often simpler and safer than un-pickling a stale object across library versions.</li>
+        </ul>
+        <p>Rule of thumb: always persist the forecast; persist the model only when you have a concrete reason (cost, audit, reproducibility).</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2: RETRAIN CADENCE ============ -->
+  <section class="section" id="cadence">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers industry practice</span>
+      <h2>Retrain cadence: how often to refit <span class="tag concept">5 min live</span></h2>
+    </div>
+    <p class="lede">"Retrain" here means refit on the newest window of data so the forecast reflects the latest days. Cadence is a trade-off. Refit too rarely and the forecast goes <strong>stale</strong> - it misses a new trend break or a shifted season. Refit too often and you pay in <strong>compute cost and churn</strong> - the numbers jitter run to run, and the business loses trust in a forecast that changes every hour. The right cadence tracks how fast the series actually moves and how often the decision is made.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Retrain cadence trade-off: refitting too rarely makes the forecast stale, too often causes cost and churn, and a middle cadence matched to the decision is best">
+        <style>
+          .b9bT { font: 700 13px Inter, sans-serif; fill: #FFFFFF; }
+          .b9bI { font: 700 13px Inter, sans-serif; fill: #0F172A; }
+          .b9bX { font: 400 12px Inter, sans-serif; fill: #64748B; }
+          .b9bN { font: 600 13px Inter, sans-serif; fill: #14532D; }
+          .b9bB { font: 700 12px Inter, sans-serif; fill: #991B1B; }
+        </style>
+        <text class="b9bI" x="24" y="26">Pick the cadence that matches how fast the series moves and how often the decision runs</text>
+
+        <!-- too rare -->
+        <rect x="24" y="46" width="256" height="118" rx="12" fill="#FEF2F2" stroke="#FCA5A5" stroke-width="2"/>
+        <text class="b9bB" x="44" y="72">Too rare (e.g. quarterly)</text>
+        <text class="b9bX" x="44" y="96">Forecast goes STALE.</text>
+        <text class="b9bX" x="44" y="116">Misses new trend breaks</text>
+        <text class="b9bX" x="44" y="134">and shifted seasons.</text>
+        <text class="b9bX" x="44" y="154">Cheap, but wrong.</text>
+
+        <!-- just right -->
+        <rect x="312" y="46" width="256" height="118" rx="12" fill="#F0FDF4" stroke="#16A34A" stroke-width="2"/>
+        <text class="b9bN" x="332" y="72">Matched (e.g. daily / weekly)</text>
+        <text class="b9bX" x="332" y="96">Cadence = decision cadence.</text>
+        <text class="b9bX" x="332" y="116">Fresh enough to track the</text>
+        <text class="b9bX" x="332" y="134">series, stable enough to trust.</text>
+        <text class="b9bN" x="332" y="154">The default to reach for.</text>
+
+        <!-- too often -->
+        <rect x="600" y="46" width="256" height="118" rx="12" fill="#334155"/>
+        <text class="b9bT" x="620" y="72">Too often (e.g. hourly)</text>
+        <text class="b9bT" x="620" y="96" fill="#DCFCE7">Cost + CHURN.</text>
+        <text class="b9bT" x="620" y="116" fill="#DCFCE7">Numbers jitter run to run;</text>
+        <text class="b9bT" x="620" y="134" fill="#DCFCE7">the business loses trust</text>
+        <text class="b9bT" x="620" y="154" fill="#DCFCE7">in a forecast that never sits still.</text>
+
+        <rect x="24" y="196" width="14" height="14" rx="3" fill="#16A34A"/>
+        <text class="b9bN" x="46" y="208">Start by refitting on the decision's cadence; let monitoring (b10) fire an off-schedule refit on drift.</text>
+        <text class="b9bX" x="46" y="234">Two clocks: a scheduled refit (this session) and an event-driven refit fired by drift (next session). Most teams run both.</text>
+        <text class="b9bX" x="46" y="256">A daily decision rarely needs an hourly model. Match the clock to the choice being made.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - too rare = stale, too often = cost and churn, matched = trust</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The DS-to-engineering handoff is a contract<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The most expensive production bugs are not model bugs - they are handoff bugs. The forecast crosses from data science to engineering, and if the meaning of the numbers is ambiguous, the dashboard will quietly show the wrong thing. Write the contract down:</p>
+        <table class="clean">
+          <thead><tr><th>Contract term</th><th>What it pins down</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Horizon</strong></td><td>How many periods ahead (H = 14 days). The dashboard must not plot past it.</td></tr>
+            <tr><td><strong>Granularity</strong></td><td>Daily. Not "days" some places and "weeks" others.</td></tr>
+            <tr><td><strong>Interval</strong></td><td>Every point ships with a lower and upper bound and its coverage level (e.g. 90%).</td></tr>
+            <tr><td><strong>As-of / freshness</strong></td><td>The last actual date the forecast was built from, so the dashboard can show "as of".</td></tr>
+            <tr><td><strong>Units + timezone</strong></td><td>Sessions, in the store's timezone. Ambiguity here silently doubles or shifts a day.</td></tr>
+          </tbody>
+        </table>
+        <div class="callout tip">
+          <strong>Ship the interval, always</strong>
+          The single honesty rail of this whole course survives into production: never hand the business a bare point. Every stored row carries <code>yhat</code>, <code>lower</code>, <code>upper</code>. A dashboard that plots the point without the band is showing false confidence.
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ DEMO 1 ============ -->
+  <section class="section" id="demo-1">
+    <div class="section-kicker">
+      <span class="klabel">Demo 1 of 2</span>
+      <h2>A scheduled refit-and-store routine <span class="tag demo">★ 14 min · everyone builds</span></h2>
+    </div>
+    <p class="lede">Build the offline half of the pattern: a function that ingests the latest daily data, refits Holt-Winters, and writes the forecast plus its prediction interval to a store. The store here is a dict / JSON standing in for a warehouse table - swap it for your real sink later.</p>
+
+    <div class="steps">
+      <div class="step"><p>Rebuild the Lumen daily series from b1 (trend + weekly seasonality + noise), on a clean daily datetime index.</p></div>
+      <div class="step"><p>Write one function: ingest the newest data, refit ETS/Holt-Winters, forecast H days with an interval, and write rows to the store.</p></div>
+      <div class="step"><p>Run it. The store now holds one row per future date with <code>yhat</code>, <code>lower</code>, <code>upper</code>, and an <code>as_of</code> stamp.</p></div>
+      <div class="step"><p>Persist the store to JSON - this is what the API will read. Serving is now a lookup.</p></div>
+    </div>
+
+    <div class="prompt-box good"><span class="label">★ Run it now (Python) - refit and store the forecast + interval</span>import pandas as pd, numpy as np, json
+from statsmodels.tsa.holtwinters import ExponentialSmoothing
+
+def build_series() -&gt; pd.Series:
+    # Lumen daily sessions: trend + weekly seasonality + noise (from b1)
+    idx = pd.date_range("2026-01-01", periods=140, freq="D")
+    i = np.arange(140)
+    season = np.array([40, 55, 60, 50, 30, -120, -140])   # weekday shape
+    y = 1000 + 2.5*i + season[i % 7] + 14*np.sin(i*1.7)
+    return pd.Series(np.round(y), index=idx, name="sessions").asfreq("D")
+
+def refit_and_store(store: dict, m: int = 7, H: int = 14, z: float = 1.645) -&gt; dict:
+    s = build_series()                      # ingest latest clean daily data
+    assert s.isna().sum() == 0, "gap in series - fix ingest before refit"
+
+    model = ExponentialSmoothing(
+        s, trend="add", seasonal="add", seasonal_periods=m
+    ).fit()
+    yhat = model.forecast(H)                 # point forecast, H days ahead
+
+    resid = s - model.fittedvalues          # in-sample residual spread
+    sigma = float(np.sqrt((resid**2).mean()))
+    lower, upper = yhat - z*sigma, yhat + z*sigma   # ~90% band (z=1.645)
+
+    as_of = str(s.index.max().date())
+    store["sessions"] = {
+        "as_of": as_of, "horizon": H, "granularity": "D", "coverage": 0.90,
+        "rows": [
+            {"date": str(d.date()), "yhat": round(float(p), 1),
+             "lower": round(float(lo), 1), "upper": round(float(hi), 1)}
+            for d, p, lo, hi in zip(yhat.index, yhat.values, lower.values, upper.values)
+        ],
+    }
+    return store
+
+STORE: dict = {}
+STORE = refit_and_store(STORE)
+json.dump(STORE, open("forecast_store.json", "w"), indent=2)   # stands in for a warehouse table
+print("as_of:", STORE["sessions"]["as_of"], "| rows:", len(STORE["sessions"]["rows"]))
+print(STORE["sessions"]["rows"][0])</div>
+
+    <div class="callout tip">
+      <strong>Schedule it, do not babysit it</strong>
+      In production this function is the body of a scheduled job - cron, Airflow, a Cloud Scheduler task, whatever your stack uses. It runs unattended on the cadence from Part 2, overwrites the store, and stamps <code>as_of</code>. The interval here is a simple residual-based band; b8's backtested coverage is the honest way to size it.
+    </div>
+  </section>
+
+  <!-- ============ DEMO 2 ============ -->
+  <section class="section" id="demo-2">
+    <div class="section-kicker">
+      <span class="klabel">Demo 2 of 2</span>
+      <h2>A minimal forecast API the dashboard reads <span class="tag demo">★ 8 min · build your own</span></h2>
+    </div>
+    <p class="lede">Build the online half: a tiny FastAPI service that reads the store and returns the forecast + interval as JSON. This is the contract the dashboard consumes - no model runs here, it is a lookup. The dashboard / UI part is called out separately: that layer just draws the JSON.</p>
+
+    <div class="steps">
+      <div class="step"><p>Load the JSON store the refit job wrote. The API never fits a model - it only reads.</p></div>
+      <div class="step"><p>Expose <code>GET /forecast/{metric}</code> returning <code>as_of</code>, horizon, granularity, coverage, and the rows (date, yhat, lower, upper).</p></div>
+      <div class="step"><p>Return a clean 404 when the metric is unknown, so the dashboard fails loud, not silent.</p></div>
+      <div class="step"><p>The dashboard (a separate UI layer) calls this endpoint and plots the band around the line.</p></div>
+    </div>
+
+    <div class="prompt-box good"><span class="label">★ Run it now (Python) - forecast API sketch (FastAPI)</span># pip install fastapi uvicorn ; run: uvicorn serve:app --reload
+import json
+from fastapi import FastAPI, HTTPException
+
+app = FastAPI(title="Lumen forecast API")
+
+def load_store() -&gt; dict:
+    # reads the store the scheduled refit job wrote (Demo 1)
+    return json.load(open("forecast_store.json"))
+
+@app.get("/forecast/{metric}")
+def get_forecast(metric: str):
+    store = load_store()
+    if metric not in store:                       # unknown metric -&gt; loud 404
+        raise HTTPException(status_code=404, detail=f"no forecast for '{metric}'")
+    entry = store[metric]
+    return {                                       # the DS-&gt;eng contract, as JSON
+        "metric": metric,
+        "as_of": entry["as_of"],                   # last actual date used
+        "horizon": entry["horizon"],               # periods ahead
+        "granularity": entry["granularity"],       # "D"
+        "coverage": entry["coverage"],             # 0.90 interval
+        "forecast": entry["rows"],                 # [{date, yhat, lower, upper}, ...]
+    }
+
+# ---- Dashboard / UI layer (separate service, sketch only) ----
+# A dashboard calls GET /forecast/sessions and plots:
+#   - the yhat line (green, the forecast)
+#   - the lower..upper band (shaded, the interval)  &lt;- never omit this
+#   - an "as of {as_of}" freshness label so a stale feed is visible
+# Example client call the UI makes:
+#   import requests
+#   data = requests.get("http://localhost:8000/forecast/sessions").json()</div>
+
+    <div class="callout example">
+      <span class="ex-pill">Real world</span>
+      <p><strong>The dashboard is where value is won or lost.</strong> A perfectly backtested model behind a dashboard that hides the interval, omits the "as of" date, or plots past the horizon will mislead the business - and they will (rightly) stop trusting the forecast. Treat the API contract and the dashboard as part of the model's accuracy, not an afterthought. Buying a vendor forecast product still leaves this last mile to you.</p>
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Try it yourself - this week <span class="tag exercise">◐ 30-45 min total</span></h2>
+    </div>
+    <ul>
+      <li>Take your best model from b3-b8 and wrap it in a <code>refit_and_store</code> function that writes forecast + interval to a JSON (or parquet) store, stamped with <code>as_of</code>.</li>
+      <li>Add a freshness guard: if the newest expected day is missing, refuse to overwrite the store and raise instead of serving stale numbers.</li>
+      <li>Stand up the FastAPI endpoint locally and hit <code>GET /forecast/sessions</code>. Confirm it returns the interval, not just the point.</li>
+      <li>Write your one-page DS-to-engineering contract: horizon, granularity, interval + coverage, as-of, units, timezone.</li>
+      <li>Decide your retrain cadence in one sentence and justify it against the decision it serves.</li>
+    </ul>
+  </section>
+
+  <!-- ============ SOURCES ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Source material</span>
+      <h2>Sources covered (cited)</h2>
+    </div>
+    <p class="lede">Productionizing a forecast is industry practice rather than a single paper; it builds on the modelling canon this track has taught. This session covers:</p>
+    <div class="covered">
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Industry practice - batch serving, retrain cadence, forecast API + dashboard, DS/eng handoff</span><span class="note">Parts 1-2 + both demos · the retrain-then-serve pattern and the contract</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">Forecasting: Principles and Practice, 3rd ed (Hyndman &amp; Athanasopoulos, FPP3)</span><span class="note">honesty rails carried forward · always serve a prediction interval, not a bare point</span></div>
+    </div>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions before you go 🎯 <span class="tag exercise">◐ 90 seconds</span></h2>
+    </div>
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">1 · Why is production forecasting usually a batch job rather than a live model call?</p>
+      <button class="qopt" type="button">A · Live models are impossible to build</button>
+      <button class="qopt" type="button">B · The forecast barely changes minute to minute, so you refit on a schedule, store it, and serve a cheap lookup</button>
+      <button class="qopt" type="button">C · Batch jobs are more accurate than models</button>
+      <p class="qwhy">Retrain-then-serve: a scheduled job refits and writes the forecast + interval to a store; serving is a lookup. Recomputing per request is pure waste.</p>
+    </div>
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">2 · What is the risk of retraining too often?</p>
+      <button class="qopt" type="button">A · The forecast becomes stale</button>
+      <button class="qopt" type="button">B · The model forgets the seasonality</button>
+      <button class="qopt" type="button">C · Compute cost rises and the numbers churn run to run, so the business stops trusting them</button>
+      <p class="qwhy">Too rare = stale; too often = cost and churn. Match cadence to how fast the series moves and how often the decision is made.</p>
+    </div>
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">3 · What must the DS-to-engineering contract pin down?</p>
+      <button class="qopt" type="button">A · Horizon, granularity, and the prediction interval (plus as-of, units, timezone)</button>
+      <button class="qopt" type="button">B · The exact model library version only</button>
+      <button class="qopt" type="button">C · Nothing - engineering can infer it from the data</button>
+      <p class="qwhy">Ambiguous handoffs are the most expensive production bugs. The dashboard must know the horizon, granularity, interval + coverage, and freshness - and never plot a bare point.</p>
+    </div>
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Builder session 9 cheat sheet <span>· pin this</span></h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>Retrain-then-serve</b><span>refit on a schedule, write forecast + interval to a store, serve a cheap lookup. Offline refits; online reads.</span></div>
+      <div class="cheat-item"><b>Batch, not live</b><span>the next-14-days answer barely moves minute to minute. Don't recompute per dashboard load.</span></div>
+      <div class="cheat-item"><b>Pipeline discipline</b><span>land, resample to the trained grid, no silent gaps, idempotent. The b1 clean-series rule, in production.</span></div>
+      <div class="cheat-item"><b>Retrain cadence</b><span>too rare = stale, too often = cost + churn. Start on the decision's cadence.</span></div>
+      <div class="cheat-item"><b>Persist the forecast</b><span>always store values + interval. Persist the model only for cost, audit, or reproducibility.</span></div>
+      <div class="cheat-item"><b>Freshness guard</b><span>refuse to serve on stale input. A broken feed extrapolates silently - check the newest day arrived.</span></div>
+      <div class="cheat-item"><b>The contract</b><span>horizon · granularity · interval + coverage · as-of · units · timezone. Written down, not inferred.</span></div>
+      <div class="cheat-item"><b>Next session</b><span>b10 - monitoring: track error as actuals arrive, detect drift, and close the loop with a retrain trigger.</span></div>
+    </div>
+  </section>
+
+  <footer class="pagefoot">
+    <span>Builder session 9 of 10 · learn-timeseries-forecasting-with-phoebe · by Phoebe Fu &nbsp;·&nbsp; 📚 <a href="https://phoebefu6.github.io/learn-with-phoebe/">Learn with Phoebe ↗</a></span>
+    <span><a href="b8-backtesting-metrics.html">← Prev: Backtesting &amp; metrics</a> &nbsp;·&nbsp; <a href="b10-monitoring.html">Next: Monitoring →</a></span>
+  </footer>
+
+</main>
+
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leader session 1 · Why forecast - learn timeseries forecasting with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-timeseries-forecasting-with-phoebe</a> / Leader session 1 of 6</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn Timeseries Forecasting with Phoebe · Leader track · Session 1 of 6</div>
+    <h1>Why forecast: <span class="accent">how a business plans ahead</span></h1>
+    <p class="sub">Every plan a business makes - how much to stock, how many people to roster, how much cash to hold, how much capacity to provision - is a bet on a number that has not happened yet. A forecast is how you make that bet on purpose instead of by gut. This session is the why: where forecasting pays off, the fact that being wrong costs money in <em>both</em> directions, and the discipline to know when a forecast is worth building and when to just use the obvious baseline.</p>
+    <div class="chip-row">
+      <span class="chip level">🟢 Leader track</span>
+      <span class="chip audience">Leaders: PM · biz · product</span>
+      <span class="chip audience">No code · concepts + decisions</span>
+      <span class="chip time">Start here</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Welcome</span>
+      <span class="a2" style="flex:4">3-16 · Why a business forecasts</span>
+      <span class="a3" style="flex:5">16-40 · Cost of error + where it pays</span>
+      <span class="a4" style="flex:1">40-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>How this track works</h2>
+    </div>
+    <p class="lede">Six sessions, no code, one running story: <strong>Lumen</strong>, a skincare brand forecasting its website's daily sessions and signups so it can plan stock, staffing, and spend. You will learn to read a forecast, judge whether it is any good, and know when to trust it - the leader's job - while the builder track (b1-b10) writes the actual Python. Today is the foundation: <em>why</em> a business forecasts at all, what it costs to get wrong, and where the payoff is real. A running promise runs through every session: a forecast is a probability, not a guarantee, so we always ask for the range of outcomes, never a single confident number.</p>
+    <div class="legend">
+      <span class="pill solid">Live - presented in session</span>
+      <span class="pill light">Self-study - read after class</span>
+      <span class="pill inkpill">Sources covered (cited)</span>
+    </div>
+    <div class="callout win">
+      <strong>★ What you walk out with today</strong>
+      A clear answer to "why are we forecasting this?" for any decision in your org, the two-sided cost-of-error lens that stops you optimising the wrong direction, a short list of where forecasting genuinely pays off (and where it does not), and the honesty rule that a forecast is a probability, not a promise.
+    </div>
+  </section>
+
+  <!-- ============ PART 1: PLAN AHEAD ============ -->
+  <section class="section" id="plan-ahead">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · industry practice + FPP3 intro</span>
+      <h2>A forecast is a decision made early <span class="tag concept">6 min live</span></h2>
+    </div>
+    <p class="lede">Strip away the technique and forecasting is simple: it is committing a resource <em>before</em> you know the demand. You order stock in March for the summer. You hire in Q2 for the Q4 rush. You reserve servers before the campaign spikes traffic. In each case you act now against a number that arrives later - and a forecast is your best honest estimate of that number, with a range around it.</p>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>The five places every business forecasts<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The same lever shows up across the whole business:</p>
+        <ul>
+          <li><strong>Demand &amp; inventory</strong> - how much to make or buy so shelves are neither empty nor overflowing.</li>
+          <li><strong>Staffing</strong> - how many people to roster for the call centre, the store, the warehouse next week.</li>
+          <li><strong>Cash-flow</strong> - how much cash will come in and go out, so you never run dry or leave money idle.</li>
+          <li><strong>Capacity</strong> - how much server, factory, or delivery capacity to provision before the load hits.</li>
+          <li><strong>Web traffic</strong> - how many sessions and signups to expect, so marketing, infra, and support are ready.</li>
+        </ul>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p><strong>Lumen's one number, many decisions.</strong> Lumen forecasts its daily website sessions and signups. That single forecast tells the infra team how many servers to keep warm, tells support how many agents to schedule, and tells finance how much revenue to expect from new signups. One forecast, three teams planning off it - which is exactly why getting it right matters.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Forecast vs target vs plan - three different things<span class="mini">2 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Leaders mix these up constantly, and it causes real damage:</p>
+        <ul>
+          <li><strong>A forecast</strong> is what you honestly expect to happen, given the evidence. It is neutral.</li>
+          <li><strong>A target</strong> is what you <em>want</em> to happen. It is aspirational and often political.</li>
+          <li><strong>A plan</strong> is what you will do about the forecast - the stock, staff, and cash you commit.</li>
+        </ul>
+        <p>When a "forecast" quietly becomes a target ("make the number say 20% growth"), you have stopped forecasting and started wishing - and the plan built on it will be wrong. Keep the forecast honest; argue about the target separately.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2: TWO-SIDED COST ============ -->
+  <section class="section" id="cost-of-error">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · the two-sided cost of error</span>
+      <h2>Being wrong costs money both ways <span class="tag concept">7 min live</span></h2>
+    </div>
+    <p class="lede">The single most important idea in this whole course for a leader: a forecast error is expensive in <strong>both</strong> directions, and the two costs are almost never equal. Forecast too high and you waste - dead stock, idle staff, cash tied up. Forecast too low and you fall short - stockouts, missed demand, angry customers. The whole game is balancing those two costs, not chasing a perfect single number.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="One target with two costly sides: forecast too low causes shortfall, forecast too high causes waste">
+        <style>
+          .a1lT { font: 700 15px Inter, sans-serif; fill: #0F172A; }
+          .a1lG { font: 700 13px Inter, sans-serif; fill: #FFFFFF; }
+          .a1lX { font: 400 12px Inter, sans-serif; fill: #64748B; }
+          .a1lB { font: 700 13px Inter, sans-serif; fill: #991B1B; }
+          .a1lb { font: 400 12px Inter, sans-serif; fill: #991B1B; }
+          .a1lN { font: 600 13px Inter, sans-serif; fill: #14532D; }
+        </style>
+        <text class="a1lT" x="24" y="28">One target, two ways to be wrong - both expensive</text>
+
+        <!-- axis -->
+        <line x1="60" y1="150" x2="820" y2="150" stroke="#CBD5E1" stroke-width="2"/>
+        <polygon points="60,150 74,144 74,156" fill="#CBD5E1"/>
+        <polygon points="820,150 806,144 806,156" fill="#CBD5E1"/>
+        <text class="a1lX" x="84" y="140">forecast too low</text>
+        <text class="a1lX" x="690" y="140">forecast too high</text>
+
+        <!-- target line -->
+        <line x1="440" y1="78" x2="440" y2="188" stroke="#16A34A" stroke-width="3"/>
+        <rect x="372" y="52" width="136" height="26" rx="6" fill="#16A34A"/>
+        <text class="a1lG" x="392" y="70">Actual need</text>
+
+        <!-- left cost box -->
+        <rect x="60" y="196" width="330" height="110" rx="10" fill="#FEF2F2" stroke="#FCA5A5" stroke-width="1.5"/>
+        <text class="a1lB" x="80" y="222">Shortfall (under-forecast)</text>
+        <text class="a1lb" x="80" y="246">· Stockouts - empty shelves</text>
+        <text class="a1lb" x="80" y="266">· Missed demand and lost sales</text>
+        <text class="a1lb" x="80" y="286">· Overloaded staff, unhappy customers</text>
+
+        <!-- right cost box -->
+        <rect x="490" y="196" width="330" height="110" rx="10" fill="#FEF2F2" stroke="#FCA5A5" stroke-width="1.5"/>
+        <text class="a1lB" x="510" y="222">Waste (over-forecast)</text>
+        <text class="a1lb" x="510" y="246">· Dead stock ties up cash</text>
+        <text class="a1lb" x="510" y="266">· Idle staff and unused capacity</text>
+        <text class="a1lb" x="510" y="286">· Markdowns to clear the excess</text>
+
+        <rect x="24" y="322" width="14" height="14" rx="3" fill="#16A34A"/>
+        <text class="a1lN" x="46" y="334">The two costs are rarely equal - a stockout may hurt far more than dead stock, or the reverse. Aim at the cheaper mistake.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - a forecast error costs money in both directions</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Lean toward the cheaper mistake, on purpose<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Because the two costs are unequal, the smart forecast is not "dead centre" - it deliberately leans toward the side that hurts less:</p>
+        <ul>
+          <li><strong>If stockouts are brutal</strong> (a launch, a loyal customer you would lose) - carry a little extra. A bit of dead stock is cheaper than a lost customer.</li>
+          <li><strong>If waste is brutal</strong> (fresh food, perishable capacity, expensive inventory) - forecast lean and accept the occasional shortfall.</li>
+          <li><strong>Name the asymmetry before you plan.</strong> Ask: "which direction of error hurts us more, and by how much?" That answer, not the raw forecast, sets your stock and staffing.</li>
+        </ul>
+        <div class="callout tip">
+          <strong>This is why a range beats a point</strong>
+          A forecast that says "sessions will be 1,000, somewhere between 850 and 1,180" lets you plan for the painful end. A bare "1,000" hides the risk you actually need to manage. Always ask for the range.
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 3: WHERE IT PAYS ============ -->
+  <section class="section" id="where-it-pays">
+    <div class="section-kicker">
+      <span class="klabel">Part 3 · where forecasting pays off</span>
+      <h2>Every planning question is a forecast question <span class="tag concept">6 min live</span></h2>
+    </div>
+    <p class="lede">Forecasting pays off wherever you must commit a resource ahead of demand and the cost of being wrong is real. If the decision is reversible and cheap, a forecast is overkill. If it locks in money, people, or capacity for weeks, a good forecast - with its range - earns its keep many times over.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Five business planning questions all pointing to a single forecast they depend on">
+        <style>
+          .a1wT { font: 700 15px Inter, sans-serif; fill: #0F172A; }
+          .a1wQ { font: 600 13px Inter, sans-serif; fill: #0F172A; }
+          .a1wF { font: 700 16px Inter, sans-serif; fill: #14532D; }
+          .a1wf { font: 400 12.5px Inter, sans-serif; fill: #14532D; }
+          .a1wX { font: 400 12px Inter, sans-serif; fill: #64748B; }
+        </style>
+        <text class="a1wT" x="24" y="28">Every planning question is really a forecast question</text>
+
+        <!-- left question boxes -->
+        <rect x="24" y="52" width="360" height="46" rx="9" fill="#F1F5F9" stroke="#CBD5E1"/>
+        <text class="a1wQ" x="44" y="80">How much stock should we order?</text>
+        <rect x="24" y="110" width="360" height="46" rx="9" fill="#F1F5F9" stroke="#CBD5E1"/>
+        <text class="a1wQ" x="44" y="138">How many people should we roster?</text>
+        <rect x="24" y="168" width="360" height="46" rx="9" fill="#F1F5F9" stroke="#CBD5E1"/>
+        <text class="a1wQ" x="44" y="196">How much cash will we need?</text>
+        <rect x="24" y="226" width="360" height="46" rx="9" fill="#F1F5F9" stroke="#CBD5E1"/>
+        <text class="a1wQ" x="44" y="254">How much capacity to provision?</text>
+        <rect x="24" y="284" width="360" height="46" rx="9" fill="#F1F5F9" stroke="#CBD5E1"/>
+        <text class="a1wQ" x="44" y="312">How much web traffic is coming?</text>
+
+        <!-- arrows converging -->
+        <line x1="384" y1="75"  x2="556" y2="175" stroke="#94A3B8" stroke-width="1.5"/>
+        <line x1="384" y1="133" x2="556" y2="180" stroke="#94A3B8" stroke-width="1.5"/>
+        <line x1="384" y1="191" x2="556" y2="185" stroke="#94A3B8" stroke-width="1.5"/>
+        <line x1="384" y1="249" x2="556" y2="190" stroke="#94A3B8" stroke-width="1.5"/>
+        <line x1="384" y1="307" x2="556" y2="195" stroke="#94A3B8" stroke-width="1.5"/>
+        <polygon points="556,185 542,179 542,191" fill="#94A3B8"/>
+
+        <!-- forecast node -->
+        <rect x="560" y="118" width="296" height="146" rx="12" fill="#F0FDF4" stroke="#16A34A" stroke-width="2"/>
+        <text class="a1wF" x="584" y="162">It all leans on a forecast</text>
+        <text class="a1wf" x="584" y="192">the number - with its range -</text>
+        <text class="a1wf" x="584" y="212">you commit against before</text>
+        <text class="a1wf" x="584" y="232">the demand actually arrives.</text>
+
+        <text class="a1wX" x="24" y="352">Reversible, cheap decision? Skip the forecast. Locks in money, people, or capacity for weeks? Forecast it - with the range.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the decisions a forecast feeds</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>When to forecast, and when to just use the baseline<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Building a real forecasting model is not always worth it. Before you commission one, ask:</p>
+        <ul>
+          <li><strong>Is there a decision waiting on it?</strong> No decision, no forecast. A number nobody acts on is trivia.</li>
+          <li><strong>Does the error cost enough</strong> to justify the effort of building and maintaining a model?</li>
+          <li><strong>Is the past any guide to the future?</strong> A brand-new product with no history, or a genuine one-off event, cannot be forecast from a series that does not exist yet.</li>
+        </ul>
+        <p>When the answer is "not really", use the <strong>baseline</strong> instead: "next week looks like last week" or "the same week last year, adjusted for growth". It is free, honest, and often good enough. The rule that runs through this whole course: a fancy model has to <em>beat</em> that simple baseline, or it is not worth the complexity.</p>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p><strong>The humility lesson from the M-competitions.</strong> The largest public forecasting bake-offs (Makridakis' M4 and M5) found again and again that simple methods - and combinations of them - are shockingly hard to beat. For a leader, that means: be sceptical of any vendor or team promising a complex model without showing it beats the boring baseline first.</p>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ WALK-THROUGH (thought exercise) ============ -->
+  <section class="section" id="walkthrough">
+    <div class="section-kicker">
+      <span class="klabel">Walk-through · think it through</span>
+      <h2>Frame one decision as a forecast <span class="tag demo">◐ 10 min · together</span></h2>
+    </div>
+    <p class="lede">No code here - just the leader's reasoning. Take one real decision from Lumen and walk it through the lens you just learned.</p>
+
+    <div class="steps">
+      <div class="step"><p><strong>Name the decision.</strong> Lumen must decide how many support agents to schedule for next week. That commitment is made now, days before the demand arrives.</p></div>
+      <div class="step"><p><strong>Name the number it waits on.</strong> The decision leans on forecasted daily website sessions and signups - more traffic means more support tickets.</p></div>
+      <div class="step"><p><strong>Name the cost each way.</strong> Too few agents means long waits and churn (shortfall). Too many means paid, idle staff (waste). Which hurts Lumen more this quarter?</p></div>
+      <div class="step"><p><strong>Decide the lean.</strong> If Lumen is protecting a fragile launch reputation, lean toward slightly over-staffing. If margins are tight, lean lean. State it out loud before anyone models anything.</p></div>
+    </div>
+
+    <div class="callout tip">
+      <strong>Do this for real, at work</strong>
+      Pick any recurring decision your team makes - reorder points, roster sizes, cash buffers. It is a forecast in disguise. Naming the number and the two-sided cost is 80% of the value, and you can do it before a single model exists.
+    </div>
+  </section>
+
+  <!-- ============ HONESTY RAIL ============ -->
+  <section class="section" id="honesty">
+    <div class="section-kicker">
+      <span class="klabel">The honesty rail</span>
+      <h2>A forecast is a probability, not a promise <span class="tag concept">3 min live</span></h2>
+    </div>
+    <p class="lede">This is the rule that keeps you out of trouble, and it runs through all six sessions. A forecast is your best honest estimate of an uncertain future - it comes with a range, and it can be wrong. Anyone who hands you a single confident number with no range is selling you false certainty.</p>
+    <div class="callout win">
+      <strong>How a leader keeps a forecast honest</strong>
+      Always ask three questions: <strong>What is the range?</strong> (never accept a bare point). <strong>What does it assume?</strong> (a forecast assumes tomorrow resembles the past - name what could break that). <strong>Does it beat the simple baseline?</strong> (if not, use the baseline). Do that, and you will trust your forecasts for the right reasons and distrust them for the right reasons.
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Try it yourself - this week <span class="tag exercise">◐ 20-30 min total</span></h2>
+    </div>
+    <ul>
+      <li>List <strong>three decisions</strong> in your org that a forecast feeds - stock, staffing, cash, capacity, traffic, anything you commit ahead of demand.</li>
+      <li>For each, write the <strong>cost of being too high</strong> (waste) and the <strong>cost of being too low</strong> (shortfall) in one line each.</li>
+      <li>Mark which direction hurts more for each decision - that asymmetry is where you will lean.</li>
+      <li>Pick one decision and write a single sentence: does it deserve a real forecast, or is a simple baseline ("like last week / last year") good enough?</li>
+      <li>Optional: skim the intro of FPP3 (Hyndman &amp; Athanasopoulos, otexts.com/fpp3) - the free, honest textbook this course follows.</li>
+    </ul>
+  </section>
+
+  <!-- ============ SOURCES ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Source material</span>
+      <h2>Sources covered (cited)</h2>
+    </div>
+    <p class="lede">Framed from the forecasting canon and the field's biggest empirical evidence. This session covers:</p>
+    <div class="covered">
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Forecasting: Principles and Practice, 3rd ed (Hyndman &amp; Athanasopoulos, FPP3)</span><span class="note">Introduction · what forecasting is for and why businesses do it</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">M-competitions (Makridakis, M4/M5)</span><span class="note">Part 3 · simple baselines are hard to beat, complexity must earn its place</span></div>
+    </div>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions before you go 🎯 <span class="tag exercise">◐ 90 seconds</span></h2>
+    </div>
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">1 · What is a forecast, in one line?</p>
+      <button class="qopt" type="button">A · A guarantee of what will happen</button>
+      <button class="qopt" type="button">B · An honest estimate of an uncertain future, committed to before the demand arrives</button>
+      <button class="qopt" type="button">C · The target the business wants to hit</button>
+      <p class="qwhy">A forecast is what you honestly expect, with a range - not a promise and not a wish. A target is what you want; a forecast is what you expect.</p>
+    </div>
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">2 · Why does the "two-sided cost of error" matter to a leader?</p>
+      <button class="qopt" type="button">A · It makes the forecast more accurate</button>
+      <button class="qopt" type="button">B · It means you only ever need to forecast once</button>
+      <button class="qopt" type="button">C · Forecasting too high wastes resources and too low causes shortfalls, and the two costs are rarely equal - so you lean toward the cheaper mistake</button>
+      <p class="qwhy">Over-forecasting wastes (dead stock, idle staff); under-forecasting falls short (stockouts, lost sales). Naming which side hurts more sets the plan.</p>
+    </div>
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">3 · When should you skip building a forecast and just use a baseline?</p>
+      <button class="qopt" type="button">A · When there is no real decision waiting on it, the error is cheap, or there is no relevant history</button>
+      <button class="qopt" type="button">B · Always - baselines are the most accurate</button>
+      <button class="qopt" type="button">C · Never - every number needs a complex model</button>
+      <p class="qwhy">No decision, cheap error, or no history means a model is overkill. Use "like last week / last year" - and remember any real model must beat that baseline to be worth it.</p>
+    </div>
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Leader session 1 cheat sheet <span>· pin this</span></h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>Forecast = decision made early</b><span>you commit stock, staff, cash, or capacity before the demand actually arrives.</span></div>
+      <div class="cheat-item"><b>Five places it pays</b><span>demand/inventory, staffing, cash-flow, capacity, web traffic - anywhere you plan ahead.</span></div>
+      <div class="cheat-item"><b>Forecast ≠ target ≠ plan</b><span>expect vs want vs do. Keep the forecast honest; argue the target separately.</span></div>
+      <div class="cheat-item"><b>Cost of error is two-sided</b><span>too high = waste (dead stock, idle staff); too low = shortfall (stockouts, lost sales).</span></div>
+      <div class="cheat-item"><b>Lean to the cheaper mistake</b><span>the two costs are rarely equal - name the asymmetry, then plan toward the side that hurts less.</span></div>
+      <div class="cheat-item"><b>Probability, not promise</b><span>always ask for the range, the assumptions, and whether it beats the simple baseline.</span></div>
+      <div class="cheat-item"><b>When to skip a model</b><span>no decision, cheap error, or no history? Use a baseline like "last week / last year".</span></div>
+      <div class="cheat-item"><b>Next session</b><span>a2 - the shape of a series in plain English: trend, seasonality, cycle, and noise.</span></div>
+    </div>
+  </section>
+
+  <footer class="pagefoot">
+    <span>Leader session 1 of 6 · learn-timeseries-forecasting-with-phoebe · by Phoebe Fu &nbsp;·&nbsp; 📚 <a href="https://phoebefu6.github.io/learn-with-phoebe/">Learn with Phoebe ↗</a></span>
+    <span><a href="../index.html">← All sessions</a> &nbsp;·&nbsp; <a href="a2-shape-of-a-series.html">Next: The shape of a series →</a></span>
+  </footer>
+
+</main>
+
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

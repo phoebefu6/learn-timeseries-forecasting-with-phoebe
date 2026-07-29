@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Builder session 10 · Monitoring - learn timeseries forecasting with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-timeseries-forecasting-with-phoebe</a> / Builder session 10 of 10</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn Timeseries Forecasting with Phoebe · Builder track · Session 10 of 10</div>
+    <h1>Monitoring: <span class="accent">keeping a forecast honest after it ships</span></h1>
+    <p class="sub">The final builder session. A forecast is never "done" - the world it predicts keeps moving. This session closes the loop: track forecast error as actuals arrive, tell data drift from concept drift, detect when the model has degraded, and trigger a retrain or fall back to the baseline before anyone acts on a broken number. We tie the whole journey back to the analyst who first plotted the series in b1.</p>
+    <div class="chip-row">
+      <span class="chip level">🔴 Builder track</span>
+      <span class="chip audience">Practitioners: analysts · data scientists · engineers</span>
+      <span class="chip audience">Python 3.10+ · a notebook</span>
+      <span class="chip time">~45 min · capstone</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Recap</span>
+      <span class="a2" style="flex:4">3-18 · Error tracking + drift</span>
+      <span class="a3" style="flex:5">18-42 · Build-along: monitor + drift detector</span>
+      <span class="a4" style="flex:1">42-45 · Wrap</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>A forecast is never "done"</h2>
+    </div>
+    <p class="lede">You shipped the forecast in b9 - refit on a schedule, stored, served through an API. But the moment it goes live, the clock starts: actuals arrive, and the only honest question is whether the forecast is still good. Monitoring is the discipline that answers it. This capstone builds the two checks every production forecast needs - a rolling error tracker and a drift detector - and wires them into a closed loop that decides, automatically, when to retrain or fall back. That loop hands the series right back to the analyst from b1.</p>
+    <div class="legend">
+      <span class="pill solid">Live - presented in session</span>
+      <span class="pill light">Self-study - read after class</span>
+      <span class="pill peach">★ Run it now (Python)</span>
+      <span class="pill inkpill">Sources covered (cited)</span>
+    </div>
+    <div class="callout win">
+      <strong>★ What you walk out with today</strong>
+      A rolling-error monitor that flags when MAPE crosses a threshold and fires a retrain alert, a simple drift detector that compares recent actuals to the training distribution, a guardrail that falls back to seasonal-naive when the model output is absurd, and the closed-loop mental model that makes forecasting a living system - the full builder journey, wrapped.
+    </div>
+  </section>
+
+  <!-- ============ PART 1: ERROR TRACKING ============ -->
+  <section class="section" id="track">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers industry practice</span>
+      <h2>Track forecast error as actuals arrive <span class="tag concept">7 min live</span></h2>
+    </div>
+    <p class="lede">Backtesting in b8 measured error before you shipped. Monitoring measures it after - on live actuals the model never saw. Every day, yesterday's forecast meets yesterday's actual; log the pair, and a rolling error metric (MAPE or MASE over the last N days) becomes a dashboard that answers one question: is the forecast still as good as the backtest promised? When that rolling number climbs past a threshold, something has changed.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="An error-tracking panel showing a rolling MAPE line crossing a threshold and a drift alert tile">
+        <style>
+          .b10aT { font: 700 13px Inter, sans-serif; fill: #0F172A; }
+          .b10aX { font: 400 12px Inter, sans-serif; fill: #64748B; }
+          .b10aN { font: 600 13px Inter, sans-serif; fill: #14532D; }
+          .b10aB { font: 700 12px Inter, sans-serif; fill: #991B1B; }
+          .b10aW { font: 700 12px Inter, sans-serif; fill: #FFFFFF; }
+          .b10aG { font: 700 12px Inter, sans-serif; fill: #16A34A; }
+        </style>
+        <text class="b10aT" x="24" y="26">Rolling MAPE over the last N days, with an alert threshold</text>
+
+        <!-- axes -->
+        <line x1="70" y1="50" x2="70" y2="200" stroke="#CBD5E1" stroke-width="2"/>
+        <line x1="70" y1="200" x2="620" y2="200" stroke="#CBD5E1" stroke-width="2"/>
+        <text class="b10aX" x="24" y="60">MAPE</text>
+        <text class="b10aX" x="560" y="220">time →</text>
+
+        <!-- threshold line -->
+        <line x1="70" y1="110" x2="620" y2="110" stroke="#991B1B" stroke-width="2" stroke-dasharray="6 5"/>
+        <text class="b10aB" x="470" y="104">threshold (e.g. 12%)</text>
+
+        <!-- rolling mape line: flat then rising past threshold -->
+        <polyline points="70,168 118,172 166,166 214,170 262,164 310,168 358,158 406,150 454,138 502,120 550,96 598,78"
+                  fill="none" stroke="#16A34A" stroke-width="3"/>
+        <circle cx="550" cy="96" r="5" fill="#991B1B"/>
+        <circle cx="598" cy="78" r="5" fill="#991B1B"/>
+        <text class="b10aG" x="120" y="188">healthy - below threshold</text>
+        <text class="b10aB" x="474" y="140">error climbing</text>
+
+        <!-- drift alert tile -->
+        <rect x="648" y="50" width="208" height="70" rx="12" fill="#FEF2F2" stroke="#FCA5A5" stroke-width="2"/>
+        <text class="b10aB" x="668" y="80">⚠ DRIFT ALERT</text>
+        <text class="b10aX" x="668" y="102">PSI 0.31 · retrain fired</text>
+
+        <!-- healthy tile -->
+        <rect x="648" y="132" width="208" height="68" rx="12" fill="#F0FDF4" stroke="#16A34A" stroke-width="2"/>
+        <text class="b10aG" x="668" y="162">rolling MAPE 11.4%</text>
+        <text class="b10aX" x="668" y="184">7-day window · vs 9.8% base</text>
+
+        <rect x="24" y="236" width="14" height="14" rx="3" fill="#991B1B"/>
+        <text class="b10aN" x="46" y="248">When the rolling line crosses the threshold, alert now - don't wait for the next scheduled refit.</text>
+        <text class="b10aX" x="46" y="274">Compare live error to the backtested baseline from b8. A rising gap is the signal; the absolute number alone is not.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - a rolling-MAPE panel with a threshold and a drift-alert tile</figcaption>
+    </figure>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>Data drift vs concept drift<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>When error climbs, ask <em>what</em> changed. Two very different causes, two different fixes:</p>
+        <ul>
+          <li><strong>Data drift</strong> - the input distribution shifts. The series moves to a new level or variance (a viral spike, a pricing change, a new market). The relationship the model learned may still hold; it just needs to see the new data. A refit often fixes it.</li>
+          <li><strong>Concept drift</strong> - the relationship itself changes. A <em>regime change</em>: the weekly pattern inverts, a new channel rewires demand, the pandemic rewrites everything. Refitting on more of the old data will not save you; you may need a new model or new features.</li>
+        </ul>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p><strong>The two look identical on the error chart - both just make MAPE rise.</strong> That is why you monitor the <em>inputs</em> too, not only the error. A drift detector on the actuals tells you the distribution moved (data drift); persistent error even after a refit points to concept drift. The M-competition humility applies here as well: when in doubt, a robust simple model degrades more gracefully than a fragile complex one.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Guardrails: sanity bounds and the baseline fallback<span class="mini">2 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Monitoring catches slow degradation. Guardrails catch a model that has gone <em>absurd</em> right now, before the number reaches anyone:</p>
+        <ul>
+          <li><strong>Sanity bounds.</strong> A forecast of negative sessions, or 10x the historical max, is not a forecast - it is a bug. Clamp or reject it.</li>
+          <li><strong>Baseline fallback.</strong> If the model output fails a sanity check or the model errors, fall back to the seasonal-naive forecast from b1. A boring, correct baseline beats a spectacular wrong number every time.</li>
+          <li><strong>Fail loud, serve safe.</strong> Log the fallback so a human investigates - but never let the pipeline serve nonsense while it waits for one.</li>
+        </ul>
+        <p>This is the same seasonal-naive line you built in b1, now earning its second job: the safety net under the whole system.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2: THE CLOSED LOOP ============ -->
+  <section class="section" id="loop">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers industry practice</span>
+      <h2>The closed loop back to b1 <span class="tag concept">5 min live</span></h2>
+    </div>
+    <p class="lede">Everything in this track now becomes a cycle. Forecast, observe the actuals, measure the error, ask whether it drifted, and either retrain or fall back to the baseline - then forecast again. A guardrail gate sits in the middle so no absurd number escapes. This is the loop that turns a one-off model into a living system, and it hands the series straight back to the analyst who first plotted it in b1.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The closed monitoring loop: forecast, observe actuals, measure error, check for drift, then retrain or fall back to baseline, with a guardrail gate, cycling back to forecast">
+        <style>
+          .b10bT { font: 700 13px Inter, sans-serif; fill: #FFFFFF; }
+          .b10bI { font: 700 13px Inter, sans-serif; fill: #0F172A; }
+          .b10bX { font: 400 12px Inter, sans-serif; fill: #64748B; }
+          .b10bN { font: 600 13px Inter, sans-serif; fill: #14532D; }
+          .b10bB { font: 700 12px Inter, sans-serif; fill: #991B1B; }
+        </style>
+        <text class="b10bI" x="24" y="26">Forecast → observe → measure → drift? → retrain / fall back → forecast</text>
+
+        <!-- forecast -->
+        <rect x="40" y="52" width="150" height="60" rx="10" fill="#16A34A"/>
+        <text class="b10bT" x="60" y="80">Forecast</text>
+        <text class="b10bT" x="60" y="100" fill="#DCFCE7">served (b9)</text>
+
+        <!-- observe -->
+        <rect x="256" y="52" width="150" height="60" rx="10" fill="#334155"/>
+        <text class="b10bT" x="276" y="80">Observe actuals</text>
+        <text class="b10bT" x="276" y="100" fill="#DCFCE7">the day arrives</text>
+
+        <!-- measure -->
+        <rect x="472" y="52" width="150" height="60" rx="10" fill="#334155"/>
+        <text class="b10bT" x="492" y="80">Measure error</text>
+        <text class="b10bT" x="492" y="100" fill="#DCFCE7">rolling MAPE</text>
+
+        <!-- drift gate (diamond-ish) -->
+        <rect x="672" y="46" width="150" height="72" rx="10" fill="#F0FDF4" stroke="#16A34A" stroke-width="2"/>
+        <text class="b10bI" x="692" y="74">Drift? +</text>
+        <text class="b10bI" x="692" y="92">guardrail</text>
+        <text class="b10bX" x="692" y="110">the decision gate</text>
+
+        <!-- retrain -->
+        <rect x="472" y="176" width="150" height="60" rx="10" fill="#16A34A"/>
+        <text class="b10bT" x="492" y="204">Retrain</text>
+        <text class="b10bT" x="492" y="224" fill="#DCFCE7">refit on new data</text>
+
+        <!-- fallback -->
+        <rect x="256" y="176" width="150" height="60" rx="10" fill="#FEF2F2" stroke="#FCA5A5" stroke-width="2"/>
+        <text class="b10bB" x="276" y="204">Fall back</text>
+        <text class="b10bX" x="276" y="224">seasonal-naive (b1)</text>
+
+        <!-- analyst -->
+        <rect x="40" y="176" width="150" height="60" rx="10" fill="#14532D"/>
+        <text class="b10bT" x="60" y="204">Analyst (b1)</text>
+        <text class="b10bT" x="60" y="224" fill="#DCFCE7">investigates</text>
+
+        <!-- top arrows -->
+        <line x1="190" y1="82" x2="254" y2="82" stroke="#94A3B8" stroke-width="2.5" marker-end="url(#b10bArr)"/>
+        <line x1="406" y1="82" x2="470" y2="82" stroke="#94A3B8" stroke-width="2.5" marker-end="url(#b10bArr)"/>
+        <line x1="622" y1="82" x2="670" y2="82" stroke="#94A3B8" stroke-width="2.5" marker-end="url(#b10bArr)"/>
+        <!-- gate down to retrain -->
+        <line x1="747" y1="118" x2="747" y2="150" stroke="#94A3B8" stroke-width="2.5"/>
+        <line x1="747" y1="150" x2="547" y2="150" stroke="#94A3B8" stroke-width="2.5"/>
+        <line x1="547" y1="150" x2="547" y2="174" stroke="#94A3B8" stroke-width="2.5" marker-end="url(#b10bArr)"/>
+        <text class="b10bN" x="600" y="144">yes → retrain</text>
+        <!-- retrain to fallback (or straight back) -->
+        <line x1="472" y1="206" x2="408" y2="206" stroke="#94A3B8" stroke-width="2.5" marker-end="url(#b10bArr)"/>
+        <text class="b10bB" x="360" y="168">absurd? →</text>
+        <!-- fallback / retrain back to forecast via analyst -->
+        <line x1="256" y1="206" x2="192" y2="206" stroke="#94A3B8" stroke-width="2.5" marker-end="url(#b10bArr)"/>
+        <line x1="115" y1="176" x2="115" y2="114" stroke="#16A34A" stroke-width="2.5" marker-end="url(#b10bArr)"/>
+        <text class="b10bN" x="122" y="150">loop closes → forecast</text>
+
+        <defs>
+          <marker id="b10bArr" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path d="M0,0 L9,4.5 L0,9 Z" fill="#94A3B8"/>
+          </marker>
+        </defs>
+
+        <rect x="24" y="278" width="14" height="14" rx="3" fill="#16A34A"/>
+        <text class="b10bN" x="46" y="290">The gate: no drift → serve on; drift → retrain; absurd output → fall back to baseline + page a human.</text>
+        <text class="b10bX" x="46" y="312">The loop never ends. That is the point - a forecast is a living system, not a deliverable you close.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the closed loop with a drift + guardrail gate, back to the b1 analyst</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Triggering a retrain: schedule + event, together<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>b9 gave you the scheduled clock. Monitoring adds the second, event-driven clock:</p>
+        <ul>
+          <li><strong>Scheduled retrain</strong> (b9) - refit on cadence, regardless. The steady heartbeat.</li>
+          <li><strong>Event-driven retrain</strong> (b10) - fire off-schedule the moment rolling error crosses the threshold or the drift detector alerts. The reflex.</li>
+          <li><strong>Escalation</strong> - if a retrain does not restore accuracy, that is a concept-drift signal. Page the analyst - the model, features, or method may need to change, not just the data.</li>
+        </ul>
+        <div class="callout tip">
+          <strong>Alert on the trend, not the spike</strong>
+          A single bad day is noise; every series has them. Alert on the <em>rolling</em> error crossing a threshold over a window, not one point spiking. Otherwise you cry wolf, the team mutes the alert, and the real degradation slips through.
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ DEMO 1 ============ -->
+  <section class="section" id="demo-1">
+    <div class="section-kicker">
+      <span class="klabel">Demo 1 of 2</span>
+      <h2>A rolling-error monitor that fires a retrain alert <span class="tag demo">★ 12 min · everyone builds</span></h2>
+    </div>
+    <p class="lede">Build the error tracker: from a forecast-vs-actual log, compute rolling MAPE over the last N days and flag when it crosses a threshold. Crossing fires a "retrain" alert - the event-driven trigger from Part 2.</p>
+
+    <div class="steps">
+      <div class="step"><p>Simulate a forecast-vs-actual log: each day holds yesterday's forecast and the actual that arrived. Healthy at first, then the actuals drift up (the model starts missing).</p></div>
+      <div class="step"><p>Compute per-day absolute percentage error, then a rolling MAPE over the last N days.</p></div>
+      <div class="step"><p>Flag every day the rolling MAPE crosses the threshold, and raise a single retrain alert on the first crossing.</p></div>
+    </div>
+
+    <div class="prompt-box good"><span class="label">★ Run it now (Python) - rolling-error monitor + retrain alert</span>import pandas as pd, numpy as np
+
+# forecast-vs-actual log: healthy for 20 days, then actuals drift upward
+rng = np.random.default_rng(0)
+idx = pd.date_range("2026-06-01", periods=40, freq="D")
+yhat = pd.Series(1000 + 2.5*np.arange(40), index=idx, name="yhat")
+drift = np.concatenate([np.zeros(20), np.linspace(0, 220, 20)])   # regime shift
+actual = pd.Series(yhat.values + drift + rng.normal(0, 12, 40), index=idx, name="actual")
+log = pd.concat([yhat, actual], axis=1)
+
+def rolling_monitor(log: pd.DataFrame, window: int = 7, threshold: float = 12.0):
+    ape = (log["actual"] - log["yhat"]).abs() / log["actual"] * 100   # daily APE %
+    roll = ape.rolling(window).mean()                                 # rolling MAPE
+    breach = roll &gt; threshold
+    alert = None
+    if breach.any():
+        first = breach.idxmax()                       # first day over threshold
+        alert = {"trigger": "RETRAIN", "date": str(first.date()),
+                 "rolling_mape": round(float(roll[first]), 1), "threshold": threshold}
+    return roll, alert
+
+roll, alert = rolling_monitor(log)
+print("latest rolling MAPE:", round(float(roll.iloc[-1]), 1), "%")
+print("ALERT:", alert if alert else "none - forecast still healthy")</div>
+
+    <div class="callout tip">
+      <strong>Compare to the backtest, not to zero</strong>
+      A "good" MAPE is relative. Anchor the threshold to the backtested MAPE from b8 (say, alert at 1.3x the backtest error), not an absolute number pulled from the air. That way the monitor flags <em>degradation</em>, not just a series that was always noisy.
+    </div>
+  </section>
+
+  <!-- ============ DEMO 2 ============ -->
+  <section class="section" id="demo-2">
+    <div class="section-kicker">
+      <span class="klabel">Demo 2 of 2</span>
+      <h2>A simple drift detector on the actuals <span class="tag demo">★ 8 min · build your own</span></h2>
+    </div>
+    <p class="lede">Error tells you something broke; drift on the inputs tells you the distribution moved. Build a lightweight detector that compares the recent actuals' distribution to the training distribution using the Population Stability Index (PSI) - a standard, dependency-free drift score - and raises an alert when it crosses a rule-of-thumb bound.</p>
+
+    <div class="steps">
+      <div class="step"><p>Take a training window (what the model learned on) and a recent window (the latest actuals).</p></div>
+      <div class="step"><p>Bin both on the training quantiles, then compute PSI across the bins.</p></div>
+      <div class="step"><p>Apply the usual rule of thumb: PSI &lt; 0.1 stable, 0.1-0.25 moderate drift, &gt; 0.25 significant - alert.</p></div>
+    </div>
+
+    <div class="prompt-box good"><span class="label">★ Run it now (Python) - PSI drift detector</span>import numpy as np, pandas as pd
+
+def psi(train: np.ndarray, recent: np.ndarray, bins: int = 10) -&gt; float:
+    # bin on TRAIN quantiles so both windows share the same edges
+    edges = np.quantile(train, np.linspace(0, 1, bins + 1))
+    edges[0], edges[-1] = -np.inf, np.inf
+    tr, _ = np.histogram(train, bins=edges)
+    rc, _ = np.histogram(recent, bins=edges)
+    tr = np.clip(tr / tr.sum(), 1e-6, None)      # avoid log(0)
+    rc = np.clip(rc / rc.sum(), 1e-6, None)
+    return float(np.sum((rc - tr) * np.log(rc / tr)))
+
+def drift_alert(score: float) -&gt; dict:
+    if score &gt; 0.25:  level = "SIGNIFICANT - alert + investigate"
+    elif score &gt; 0.1: level = "MODERATE - watch"
+    else:             level = "STABLE"
+    return {"psi": round(score, 3), "verdict": level, "alert": score &gt; 0.25}
+
+rng = np.random.default_rng(1)
+train_actuals  = rng.normal(1000, 30, 200)               # what the model learned on
+recent_actuals = rng.normal(1180, 30, 30)                # a shifted-up recent window
+
+score = psi(train_actuals, recent_actuals)
+print(drift_alert(score))
+# a stable window for contrast:
+print(drift_alert(psi(train_actuals, rng.normal(1000, 30, 30))))</div>
+
+    <div class="callout example">
+      <span class="ex-pill">Real world</span>
+      <p><strong>PSI is a data-drift alarm, not a diagnosis.</strong> A high PSI says the input distribution moved - it does not say whether the learned relationship still holds. Pair it with the error monitor from Demo 1: distribution shifted + error rose after a refit points to concept drift, and that is when you escalate to the analyst rather than just retraining. Keep it simple and honest; a dependency-free PSI you understand beats a black-box drift library you do not.</p>
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Homework · capstone</span>
+      <h2>Try it yourself - close your own loop <span class="tag exercise">◐ 40-60 min total</span></h2>
+    </div>
+    <ul>
+      <li>Wire Demo 1 onto your b9 store: each day, append yesterday's forecast and the actual to a log, and compute rolling MAPE against your b8 backtested baseline.</li>
+      <li>Set a threshold at ~1.3x your backtest MAPE and have a crossing fire a retrain alert (print, log, or a real notification).</li>
+      <li>Add the PSI drift detector on your actuals and decide your own bound. When it and the error monitor both fire, tag it "investigate concept drift".</li>
+      <li>Add a guardrail: sanity-bound the model output and fall back to seasonal-naive (from b1) when it is absurd or the model errors. Log the fallback.</li>
+      <li>Draw your closed loop on one page - forecast → observe → measure → drift? → retrain / fall back - and name who gets paged at each gate.</li>
+      <li>Capstone reflection: trace one forecast through all ten sessions, series to monitored loop, and write the one honesty rail you would defend hardest in a review.</li>
+    </ul>
+  </section>
+
+  <!-- ============ SOURCES ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Source material</span>
+      <h2>Sources covered (cited)</h2>
+    </div>
+    <p class="lede">Monitoring a live forecast is industry practice built on the evaluation canon this track taught. This session covers:</p>
+    <div class="covered">
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Industry practice - error tracking, data vs concept drift, retrain triggers, guardrails, the closed loop</span><span class="note">Parts 1-2 + both demos · rolling MAPE monitor and PSI drift detector</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">Forecasting: Principles and Practice, 3rd ed (Hyndman &amp; Athanasopoulos, FPP3)</span><span class="note">error metrics (MAPE/MASE) and the baseline carried into monitoring + fallback</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">M-competitions (Makridakis, M4/M5)</span><span class="note">robust simple models degrade more gracefully - the humility that survives to production</span></div>
+    </div>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions before you go 🎯 <span class="tag exercise">◐ 90 seconds</span></h2>
+    </div>
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">1 · What is the difference between data drift and concept drift?</p>
+      <button class="qopt" type="button">A · There is no real difference</button>
+      <button class="qopt" type="button">B · Data drift is a bug; concept drift is noise</button>
+      <button class="qopt" type="button">C · Data drift = the input distribution shifts; concept drift = the learned relationship itself changes (a regime change)</button>
+      <p class="qwhy">Data drift often yields to a refit on the new data; concept drift may need a new model or features. Both raise error, so monitor inputs too, not just the error.</p>
+    </div>
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">2 · Why alert on rolling error rather than a single day's error?</p>
+      <button class="qopt" type="button">A · A single bad day is noise; alerting on it cries wolf, so you track error over a window instead</button>
+      <button class="qopt" type="button">B · Rolling error is cheaper to compute</button>
+      <button class="qopt" type="button">C · Single-day error cannot be measured</button>
+      <p class="qwhy">Every series has off days. Alert on the rolling metric crossing a threshold, anchored to the backtest, so you catch real degradation without alert fatigue.</p>
+    </div>
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">3 · What should a guardrail do when the model output is absurd?</p>
+      <button class="qopt" type="button">A · Serve it anyway and hope</button>
+      <button class="qopt" type="button">B · Fall back to the seasonal-naive baseline from b1, serve safe, and log it for a human</button>
+      <button class="qopt" type="button">C · Delete the model</button>
+      <p class="qwhy">A boring correct baseline beats a spectacular wrong number. Sanity-bound the output, fall back to seasonal-naive on failure, and page a human - never serve nonsense.</p>
+    </div>
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Builder track cheat sheet - the whole journey <span>· pin this</span></h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>b1 · Series + split</b><span>datetime index, resample to a clean grid, split by time, seasonal-naive baseline.</span></div>
+      <div class="cheat-item"><b>b2 · Decompose + baselines</b><span>STL into trend/season/remainder; naive, drift, seasonal-naive - the lines to beat.</span></div>
+      <div class="cheat-item"><b>b3 · ETS</b><span>SES → Holt → Holt-Winters; level, trend, seasonality as smoothed states.</span></div>
+      <div class="cheat-item"><b>b4 · ARIMA / SARIMA</b><span>stationarity, differencing, ACF/PACF, auto_arima for the orders.</span></div>
+      <div class="cheat-item"><b>b5 · Prophet</b><span>decomposable trend + seasonality + holidays, changepoints; analyst-friendly.</span></div>
+      <div class="cheat-item"><b>b6 · ML forecasting</b><span>lag/rolling/calendar features + gradient boosting; direct vs recursive, no leakage.</span></div>
+      <div class="cheat-item"><b>b7 · Deep (survey)</b><span>DeepAR, N-BEATS, TFT - cited, not trained from scratch. Earn the complexity.</span></div>
+      <div class="cheat-item"><b>b8 · Backtest + metrics</b><span>rolling-origin CV, MAPE/RMSE/MASE, prediction intervals and their coverage.</span></div>
+      <div class="cheat-item"><b>b9 · Productionize</b><span>retrain-then-serve, batch, store forecast + interval, the API + dashboard contract.</span></div>
+      <div class="cheat-item"><b>b10 · Monitor</b><span>rolling-error tracker, data vs concept drift, retrain trigger, baseline guardrail, close the loop.</span></div>
+      <div class="cheat-item"><b>The rails, always</b><span>ship an interval not a point · beat the baseline or don't ship · split by time, no leakage.</span></div>
+      <div class="cheat-item"><b>A forecast is never done</b><span>it is a living loop back to the b1 analyst. That is the whole point of this track.</span></div>
+    </div>
+  </section>
+
+  <footer class="pagefoot">
+    <span>Builder session 10 of 10 · learn-timeseries-forecasting-with-phoebe · by Phoebe Fu &nbsp;·&nbsp; 📚 <a href="https://phoebefu6.github.io/learn-with-phoebe/">Learn with Phoebe ↗</a></span>
+    <span><a href="b9-productionizing.html">← Prev: Productionizing</a> &nbsp;·&nbsp; <a href="../index.html">← Back to all sessions</a></span>
+  </footer>
+
+</main>
+
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>
